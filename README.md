@@ -47,10 +47,10 @@ node scripts/export-materials.mjs
 后端支持 DashScope OpenAI-compatible 接口，读取本地 `.env`：
 
 ```bash
-DASHSCOPE_API_KEY=...
-DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-DASHSCOPE_MODEL=qwen-plus
+cp .env.example .env
 ```
+
+然后在 `.env` 中填入真实的 `DASHSCOPE_API_KEY`。
 
 接口：
 
