@@ -1,0 +1,733 @@
+{
+  "id": "fixed-demo",
+  "label": "修正版材料包",
+  "badge": "合规对照",
+  "description": "同一虚构项目的修正版，权威字段、指标闭环、附件证据和签章信息已补齐。",
+  "authoritativeProject": {
+    "projectNo": "SIPG-KC-2025-024",
+    "projectName": "港区智能闸口作业协同与异常预警系统",
+    "owner": "上海港务智慧运营技术有限公司",
+    "leader": "周明远",
+    "period": "2025-01-01 至 2025-12-31",
+    "projectType": "系统类科技创新项目",
+    "source": "模拟三项计划发文、计划任务书与验收材料交叉抽取结果"
+  },
+  "requiredMaterials": [
+    {
+      "id": "approval",
+      "name": "批准立项文件摘录",
+      "required": true
+    },
+    {
+      "id": "task-book",
+      "name": "计划任务书关键页",
+      "required": true
+    },
+    {
+      "id": "cover",
+      "name": "验收材料封面",
+      "required": true
+    },
+    {
+      "id": "checklist",
+      "name": "验收文件清单",
+      "required": true
+    },
+    {
+      "id": "application",
+      "name": "科技项目评审申请书",
+      "required": true
+    },
+    {
+      "id": "work-report",
+      "name": "工作报告",
+      "required": true
+    },
+    {
+      "id": "research-outline",
+      "name": "研究报告目录与摘要",
+      "required": true
+    },
+    {
+      "id": "architecture",
+      "name": "系统架构与数据流",
+      "required": true
+    },
+    {
+      "id": "indicators",
+      "name": "关键功能与技术指标完成情况",
+      "required": true
+    },
+    {
+      "id": "test-report",
+      "name": "产品测试/检测报告",
+      "required": true
+    },
+    {
+      "id": "user-report",
+      "name": "项目成果用户使用报告",
+      "required": true
+    },
+    {
+      "id": "benefit",
+      "name": "效益分析",
+      "required": true
+    },
+    {
+      "id": "finance",
+      "name": "项目经费决算报告",
+      "required": true
+    },
+    {
+      "id": "assets-ip",
+      "name": "成果、知识产权与固定资产清单",
+      "required": true
+    },
+    {
+      "id": "appendix",
+      "name": "附件证据清单",
+      "required": true
+    }
+  ],
+  "industryNotes": [
+    "智慧港口样本背景来自公开资料抽象：自动化码头、智能生产管控、5G/F5G、AI、大数据、数字孪生等方向。",
+    "本 demo 不包含客户真实数据、真实签章、真实项目编号或真实人员信息；所有单位、人员、编号和附件均为演示模拟。",
+    "材料包刻意模拟“多文件抽取 + 权威字段比对 + 附件证据链”的验收审核过程，第一阶段不做真实 OCR 和财务真实性审计。"
+  ],
+  "sources": [
+    {
+      "label": "上海国资委：洋山四期智能化生产管控公开信息",
+      "url": "https://www.gzw.sh.gov.cn/shgzw_zxzx_gqdt/20220628/96da67de6f60469493865aca31749336.html"
+    },
+    {
+      "label": "中国港口网：绿色智能港口建设公开报道",
+      "url": "https://www.chinaports.com/portlspnews/15468"
+    },
+    {
+      "label": "上港集团官网：洋山专题公开资料",
+      "url": "https://www.portshanghai.com.cn/yszt/1999.jhtml"
+    }
+  ],
+  "pages": [
+    {
+      "id": "approval",
+      "pageNo": 1,
+      "title": "批准立项文件摘录",
+      "status": "provided",
+      "docType": "source",
+      "fields": {
+        "projectNo": "SIPG-KC-2025-024",
+        "projectName": "港区智能闸口作业协同与异常预警系统",
+        "owner": "上海港务智慧运营技术有限公司",
+        "leader": "周明远",
+        "period": "2025-01-01 至 2025-12-31",
+        "projectType": "系统类科技创新项目",
+        "source": "模拟三项计划发文、计划任务书与验收材料交叉抽取结果"
+      },
+      "sections": [
+        "模拟文件：关于下达集团 2025 年度科技创新、信息化、标准制修订三项计划的通知（摘录页）。",
+        "计划表摘录：项目编号 SIPG-KC-2025-024，项目名称 港区智能闸口作业协同与异常预警系统，承担单位 上海港务智慧运营技术有限公司，项目负责人 周明远。",
+        "本页作为项目编号、名称、承担单位、负责人和执行期的权威比对来源。"
+      ],
+      "chips": [
+        "权威来源",
+        "计划发文",
+        "字段抽取"
+      ]
+    },
+    {
+      "id": "task-book",
+      "pageNo": 2,
+      "title": "计划任务书关键页",
+      "status": "provided",
+      "docType": "source",
+      "fields": {
+        "projectNo": "SIPG-KC-2025-024",
+        "projectName": "港区智能闸口作业协同与异常预警系统",
+        "owner": "上海港务智慧运营技术有限公司",
+        "leader": "周明远",
+        "period": "2025-01-01 至 2025-12-31",
+        "projectType": "系统类科技创新项目",
+        "source": "模拟三项计划发文、计划任务书与验收材料交叉抽取结果"
+      },
+      "indicators": [
+        {
+          "id": "plate-accuracy",
+          "label": "闸口车辆号牌识别准确率",
+          "target": ">= 95%",
+          "method": "抽样 3,000 车次，人工复核识别结果"
+        },
+        {
+          "id": "event-latency",
+          "label": "异常事件平均推送时延",
+          "target": "<= 10 秒",
+          "method": "连续 20 个工作日记录事件产生至看板提示耗时"
+        },
+        {
+          "id": "sync-rate",
+          "label": "道口作业数据同步完整率",
+          "target": ">= 99%",
+          "method": "比对闸口作业系统与协同平台流水记录"
+        },
+        {
+          "id": "closed-loop-rate",
+          "label": "异常事件闭环率",
+          "target": ">= 90%",
+          "method": "统计试运行期间异常事件处理闭环记录"
+        }
+      ],
+      "sections": [
+        "模拟文件：《科技创新项目计划任务（合同）书》关键页。",
+        "建设内容：完成闸口视频识别、预约信息比对、异常事件推送、作业看板和试运行数据沉淀。",
+        "考核指标如下，后续测试报告和成果完成情况需逐项闭环。"
+      ],
+      "chips": [
+        "任务书",
+        "考核指标",
+        "比对基准"
+      ]
+    },
+    {
+      "id": "cover",
+      "pageNo": 3,
+      "title": "验收材料封面",
+      "status": "provided",
+      "fields": {
+        "projectNo": "SIPG-KC-2025-024",
+        "projectName": "港区智能闸口作业协同与异常预警系统",
+        "owner": "上海港务智慧运营技术有限公司",
+        "leader": "周明远",
+        "reportDate": "2025年12月18日"
+      },
+      "sections": [
+        "上海国际港务（集团）股份有限公司科技创新项目验收材料",
+        "项目编号：SIPG-KC-2025-024",
+        "项目名称：港区智能闸口作业协同与异常预警系统",
+        "承担单位：上海港务智慧运营技术有限公司（模拟公章）",
+        "项目负责人：周明远",
+        "上报日期：2025年12月18日"
+      ],
+      "chips": [
+        "验收正文",
+        "封面字段"
+      ]
+    },
+    {
+      "id": "checklist",
+      "pageNo": 4,
+      "title": "验收文件清单",
+      "status": "provided",
+      "checklist": [
+        {
+          "id": "approval",
+          "name": "批准立项文件摘录",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "task-book",
+          "name": "计划任务书关键页",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "cover",
+          "name": "验收材料封面",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "checklist",
+          "name": "验收文件清单",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "application",
+          "name": "科技项目评审申请书",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "work-report",
+          "name": "工作报告",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "research-outline",
+          "name": "研究报告目录与摘要",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "architecture",
+          "name": "系统架构与数据流",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "indicators",
+          "name": "关键功能与技术指标完成情况",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "test-report",
+          "name": "产品测试/检测报告",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "user-report",
+          "name": "项目成果用户使用报告",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "benefit",
+          "name": "效益分析",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "finance",
+          "name": "项目经费决算报告",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "assets-ip",
+          "name": "成果、知识产权与固定资产清单",
+          "required": true,
+          "provided": true
+        },
+        {
+          "id": "appendix",
+          "name": "附件证据清单",
+          "required": true,
+          "provided": true
+        }
+      ],
+      "sections": [
+        "验收清单根据系统类科技创新项目编制，含批准立项文件、任务书、工作报告、研究报告、测试报告、用户使用报告、效益分析、经费决算和附件证据。",
+        "本页用于演示“目录/清单信息”和“正文材料实际存在性”的交叉核对。",
+        "注意：若清单标注缺失但正文存在，仍需提示清单与装订内容不一致。"
+      ],
+      "chips": [
+        "验收正文",
+        "齐套检查",
+        "清单一致性"
+      ]
+    },
+    {
+      "id": "application",
+      "pageNo": 5,
+      "title": "科技项目评审申请书",
+      "status": "provided",
+      "fields": {
+        "projectName": "港区智能闸口作业协同与异常预警系统",
+        "applicant": "上海港务智慧运营技术有限公司",
+        "period": "2025-01-01 至 2025-12-31",
+        "reviewMonth": "2025年12月",
+        "contact": "赵一鸣 13800000000",
+        "unitOpinion": "项目已完成，验收资料整理齐全，已具备验收条件。模拟盖章。"
+      },
+      "sections": [
+        "项目名称：港区智能闸口作业协同与异常预警系统",
+        "申请评审单位：上海港务智慧运营技术有限公司",
+        "工作起止时间：2025-01-01 至 2025-12-31",
+        "成果类别：系统；评审形式：会议评审。",
+        "申请评审单位意见：同意申请验收（模拟盖章）"
+      ],
+      "chips": [
+        "申请书",
+        "意见完整"
+      ]
+    },
+    {
+      "id": "work-report",
+      "pageNo": 6,
+      "title": "工作报告",
+      "status": "provided",
+      "coverage": [
+        "前期调研",
+        "公开比价",
+        "中期联调",
+        "安全测试",
+        "上线试运行",
+        "用户培训",
+        "验收准备"
+      ],
+      "sections": [
+        "项目概况：围绕港区闸口车辆识别、箱号核验、预约信息比对、异常事件推送等作业环节开展系统建设。",
+        "工作过程覆盖：前期调研、公开比价、中期联调、安全测试、上线试运行、用户培训、验收准备。",
+        "前期完成闸口作业痛点调研和数据接口梳理；中期完成道口摄像机接入、业务系统接口联调和异常规则库配置；后期完成试运行、用户培训和验收材料准备。",
+        "本页用于演示工作报告是否覆盖前期、中期、后期、上线使用和组织管理过程。"
+      ],
+      "chips": [
+        "工作过程",
+        "组织管理"
+      ]
+    },
+    {
+      "id": "research-outline",
+      "pageNo": 7,
+      "title": "研究报告目录与摘要",
+      "status": "provided",
+      "researchSections": [
+        "目录",
+        "插图清单",
+        "引言",
+        "系统架构",
+        "关键算法",
+        "试运行结果",
+        "结论",
+        "参考文献"
+      ],
+      "sections": [
+        "摘要：本研究面向港区闸口高峰拥堵、人工复核压力大、异常事件留痕不完整等问题，构建智能闸口作业协同与异常预警系统。",
+        "报告结构：目录、插图清单、引言、系统架构、关键算法、试运行结果、结论、参考文献。",
+        "引言说明研究背景、现状、目标和意义；系统架构章节描述感知接入、算法服务、业务协同和应用展示；结论章节归纳应用效果和推广建议。"
+      ],
+      "chips": [
+        "研究报告",
+        "目录",
+        "结构检查"
+      ]
+    },
+    {
+      "id": "architecture",
+      "pageNo": 8,
+      "title": "系统架构与数据流",
+      "status": "provided",
+      "sections": [
+        "系统采用感知接入层、业务协同层、算法服务层、应用展示层四层架构。",
+        "数据流包括车辆到达、号牌识别、预约单匹配、箱号核验、异常判断、事件推送和作业归档。",
+        "接口清单：闸口作业系统接口 3 项、预约系统接口 2 项、视频平台接口 1 项、统一消息推送接口 1 项。",
+        "算法服务使用模拟 AI 识别结果，业务协同层与闸口作业系统、预约系统、视频平台进行接口对接。"
+      ],
+      "chips": [
+        "AI识别",
+        "数据流",
+        "接口联调"
+      ]
+    },
+    {
+      "id": "indicators",
+      "pageNo": 9,
+      "title": "关键功能与技术指标完成情况",
+      "status": "provided",
+      "indicators": [
+        {
+          "id": "plate-accuracy",
+          "label": "闸口车辆号牌识别准确率",
+          "target": ">= 95%",
+          "actual": "96.8%",
+          "sampleSize": "3,000 车次",
+          "passed": "通过"
+        },
+        {
+          "id": "event-latency",
+          "label": "异常事件平均推送时延",
+          "target": "<= 10 秒",
+          "actual": "6.4 秒",
+          "sampleSize": "20 个工作日",
+          "passed": "通过"
+        },
+        {
+          "id": "sync-rate",
+          "label": "道口作业数据同步完整率",
+          "target": ">= 99%",
+          "actual": "99.2%",
+          "sampleSize": "18,600 条流水",
+          "passed": "通过"
+        },
+        {
+          "id": "closed-loop-rate",
+          "label": "异常事件闭环率",
+          "target": ">= 90%",
+          "actual": "93.5%",
+          "sampleSize": "1,286 件异常",
+          "passed": "通过"
+        }
+      ],
+      "sections": [
+        "完成车辆号牌识别、预约信息比对、箱号核验、异常事件推送、作业看板等功能。",
+        "本页指标应与计划任务书关键页逐项闭环，且应与测试报告中的样本量、实测值和结论一致。"
+      ],
+      "chips": [
+        "指标核验",
+        "任务书闭环",
+        "数值检查"
+      ]
+    },
+    {
+      "id": "test-report",
+      "pageNo": 10,
+      "title": "产品测试/检测报告",
+      "status": "provided",
+      "fields": {
+        "testOrg": "项目组测试小组（模拟）",
+        "testPeriod": "2025年11月01日 至 2025年11月20日",
+        "leaderSignature": "测试组长：王启航（模拟签/章）",
+        "conclusion": "按计划任务书约定完成 4 项指标测试，号牌识别准确率 96.8%，异常事件平均推送时延 6.4 秒，道口作业数据同步完整率 99.2%，异常事件闭环率 93.5%，测试结论为通过。"
+      },
+      "indicators": [
+        {
+          "id": "plate-accuracy",
+          "label": "闸口车辆号牌识别准确率",
+          "target": ">= 95%",
+          "actual": "96.8%",
+          "sampleSize": "3,000 车次",
+          "passed": "通过"
+        },
+        {
+          "id": "event-latency",
+          "label": "异常事件平均推送时延",
+          "target": "<= 10 秒",
+          "actual": "6.4 秒",
+          "sampleSize": "20 个工作日",
+          "passed": "通过"
+        },
+        {
+          "id": "sync-rate",
+          "label": "道口作业数据同步完整率",
+          "target": ">= 99%",
+          "actual": "99.2%",
+          "sampleSize": "18,600 条流水",
+          "passed": "通过"
+        },
+        {
+          "id": "closed-loop-rate",
+          "label": "异常事件闭环率",
+          "target": ">= 90%",
+          "actual": "93.5%",
+          "sampleSize": "1,286 件异常",
+          "passed": "通过"
+        }
+      ],
+      "sections": [
+        "测试环境：模拟港区闸口 4 条车道、视频接入 8 路、闸口作业接口 3 项。",
+        "测试组织：项目组测试小组（模拟）。",
+        "测试结论：按计划任务书约定完成 4 项指标测试，号牌识别准确率 96.8%，异常事件平均推送时延 6.4 秒，道口作业数据同步完整率 99.2%，异常事件闭环率 93.5%，测试结论为通过。",
+        "测试、检测专家组组长：王启航（模拟签/章）"
+      ],
+      "chips": [
+        "测试报告",
+        "签章完整"
+      ]
+    },
+    {
+      "id": "user-report",
+      "pageNo": 11,
+      "title": "项目成果用户使用报告",
+      "status": "provided",
+      "usageRows": [
+        {
+          "label": "试运行周期",
+          "value": "2025年09月01日至2025年11月30日"
+        },
+        {
+          "label": "覆盖车道",
+          "value": "4 条"
+        },
+        {
+          "label": "日均处理车辆",
+          "value": "4,800 车次"
+        },
+        {
+          "label": "异常事件处理量",
+          "value": "1,286 件，闭环 1,202 件"
+        }
+      ],
+      "fields": {
+        "userDept": "某港区闸口运行中心（模拟应用单位）",
+        "author": "某港区闸口运行中心（模拟实际应用单位）",
+        "usagePeriod": "2025年09月01日 至 2025年11月30日",
+        "seal": "应用单位模拟盖章"
+      },
+      "sections": [
+        "试运行期间系统用于车辆到港核验、预约异常提醒和人工复核辅助。",
+        "应用单位反馈：系统降低了人工二次核对压力，异常事件可在作业看板中统一留痕。",
+        "报告出具方：某港区闸口运行中心（模拟实际应用单位）。",
+        "应用单位盖章：已盖模拟章"
+      ],
+      "chips": [
+        "用户使用",
+        "盖章完整"
+      ]
+    },
+    {
+      "id": "benefit",
+      "pageNo": 12,
+      "title": "效益分析",
+      "status": "provided",
+      "fields": {
+        "calculation": "按试运行 3 个月数据测算，单车平均闸口核验耗时由 92 秒降至 67 秒，日均车辆 4,800 车次，折算节约作业等待时间约 2,000 小时/月；按人工复核减少 2 人班测算，年化节约约 38 万元。"
+      },
+      "sections": [
+        "按试运行 3 个月数据测算，单车平均闸口核验耗时由 92 秒降至 67 秒，日均车辆 4,800 车次，折算节约作业等待时间约 2,000 小时/月；按人工复核减少 2 人班测算，年化节约约 38 万元。",
+        "社会效益：提升港区闸口通行效率和异常事件闭环能力，为智慧港口运营提供数据基础。"
+      ],
+      "chips": [
+        "效益分析",
+        "含计算过程"
+      ]
+    },
+    {
+      "id": "finance",
+      "pageNo": 13,
+      "title": "项目经费决算报告",
+      "status": "provided",
+      "budgetRows": [
+        {
+          "item": "软件开发及测试",
+          "budget": "86.00",
+          "actual": "82.00",
+          "rd": "82.00",
+          "note": "按合同和测试验收单列支"
+        },
+        {
+          "item": "设备接入与联调",
+          "budget": "24.00",
+          "actual": "22.10",
+          "rd": "22.10",
+          "note": "边缘盒计入固定资产清单"
+        },
+        {
+          "item": "知识产权与印刷",
+          "budget": "4.00",
+          "actual": "4.30",
+          "rd": "4.30",
+          "note": "附预算调整说明"
+        },
+        {
+          "item": "专家咨询费",
+          "budget": "6.00",
+          "actual": "8.00",
+          "rd": "8.00",
+          "note": "附科目调整审批流程"
+        }
+      ],
+      "fields": {
+        "budget": "120.00万元",
+        "actual": "116.40万元",
+        "rdExpense": "116.40万元",
+        "financeSeal": "资产财务部模拟印章"
+      },
+      "sections": [
+        "预算费用共计 120.00 万元，经费来源为自筹经费。",
+        "经费决算表模拟列示预算、实际支出、列入研发支出和备注说明。",
+        "财务章：资产财务部模拟印章"
+      ],
+      "chips": [
+        "经费决算",
+        "财务章完整"
+      ]
+    },
+    {
+      "id": "assets-ip",
+      "pageNo": 14,
+      "title": "成果、知识产权与固定资产清单",
+      "status": "provided",
+      "assetRows": [
+        {
+          "type": "系统成果",
+          "name": "闸口异常预警规则库",
+          "proof": "版本说明 V1.0"
+        },
+        {
+          "type": "系统成果",
+          "name": "作业协同看板",
+          "proof": "系统截图 4 张"
+        },
+        {
+          "type": "知识产权",
+          "name": "港区智能闸口协同预警系统",
+          "proof": "模拟软著受理通知"
+        },
+        {
+          "type": "固定资产",
+          "name": "边缘识别盒 2 台、测试摄像机 4 台",
+          "proof": "模拟固定资产清单"
+        }
+      ],
+      "sections": [
+        "成果清单用于连接任务书建设内容、测试报告、使用报告和附件证据。",
+        "知识产权和固定资产证明在 demo 中只做存在性检查，真实性仍需人工复核。"
+      ],
+      "chips": [
+        "成果清单",
+        "知识产权",
+        "固定资产"
+      ]
+    },
+    {
+      "id": "appendix",
+      "pageNo": 15,
+      "title": "附件证据清单",
+      "status": "provided",
+      "evidenceRows": [
+        {
+          "id": "approval-pdf",
+          "name": "三项计划发文摘录.pdf",
+          "type": "PDF",
+          "linkedPage": "批准立项文件摘录",
+          "status": "已提供"
+        },
+        {
+          "id": "task-book-docx",
+          "name": "计划任务书关键页.docx",
+          "type": "Word",
+          "linkedPage": "计划任务书关键页",
+          "status": "已提供"
+        },
+        {
+          "id": "use-manual",
+          "name": "系统使用说明书.pdf",
+          "type": "PDF",
+          "linkedPage": "系统架构与数据流",
+          "status": "已提供"
+        },
+        {
+          "id": "test-raw-data",
+          "name": "测试原始记录表.xlsx",
+          "type": "Excel",
+          "linkedPage": "产品测试/检测报告",
+          "status": "已提供"
+        },
+        {
+          "id": "system-screenshot",
+          "name": "作业协同看板截图.zip",
+          "type": "图片包",
+          "linkedPage": "成果清单",
+          "status": "已提供"
+        },
+        {
+          "id": "finance-approval",
+          "name": "预算科目调整审批流程.pdf",
+          "type": "PDF",
+          "linkedPage": "项目经费决算报告",
+          "status": "已提供"
+        },
+        {
+          "id": "ip-proof",
+          "name": "软著受理通知书.pdf",
+          "type": "PDF",
+          "linkedPage": "知识产权清单",
+          "status": "已提供"
+        }
+      ],
+      "sections": [
+        "附件证据清单模拟客户实际会上传的多类型文件：PDF、Word、Excel、截图和审批流导出件。",
+        "本页用于演示复杂文档解析场景下，系统如何把附件证据与验收正文中的字段、指标和签章要求建立关联。"
+      ],
+      "chips": [
+        "附件证据",
+        "多文档解析",
+        "证据链"
+      ]
+    }
+  ]
+}
