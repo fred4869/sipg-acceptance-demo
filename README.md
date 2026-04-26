@@ -21,6 +21,17 @@ npm run build
 npm run start
 ```
 
+## Docker 部署
+
+仓库已提供 `Dockerfile`，线上平台建议选择 Dockerfile 构建，不要在构建脚本里执行 `npm update -g npm`。
+
+```bash
+docker build -t sipg-acceptance-demo .
+docker run -p 8787:8787 --env-file .env sipg-acceptance-demo
+```
+
+如部署平台需要填写端口，使用 `8787`；如平台自动注入 `PORT`，服务会读取平台提供的端口。
+
 ## 演示材料文件
 
 工程内置两套样本，但输入页只展示当前送审材料；二次提交样本仅在结果页用于生成对比：
