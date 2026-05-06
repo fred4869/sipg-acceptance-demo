@@ -667,7 +667,7 @@ function OverviewPanel({ audit, packet, groupedFindings, aiReview, aiLoading, on
           <h2>{fileSummary.inputFiles || packet.materialFiles?.length || 0} 个输入文件</h2>
         </div>
         <p className="muted-small">
-          文件通过率按已接收/应审核文件计算：{fileSummary.passedFiles ?? 0} 个通过，{fileSummary.failedFiles ?? 0} 个存在确定性风险。
+          文件通过率按没问题文件数/总文件数计算：{fileSummary.passedFiles ?? 0} 个没问题，{fileSummary.failedFiles ?? 0} 个存在审核发现。
         </p>
         <div className="file-list">
           {(packet.materialFiles || []).map((file) => <span key={file}>{cleanDisplayText(file)}</span>)}

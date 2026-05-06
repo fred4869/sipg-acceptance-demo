@@ -23,7 +23,7 @@ export function auditPacket(packet) {
   const blockingScore = findings.reduce((sum, finding) => sum + severityWeight[finding.severity], 0)
   const actionableFindings = findings.filter((finding) => finding.severity !== 'review')
   const failedRules = actionableFindings.length
-  const fileSummary = buildFilePassSummary(packet, pages, pageById, actionableFindings)
+  const fileSummary = buildFilePassSummary(packet, pages, pageById, findings)
   const passRate = fileSummary.totalFiles
     ? Math.max(0, Math.round((fileSummary.passedFiles / fileSummary.totalFiles) * 100))
     : 0
@@ -51,23 +51,18 @@ export function auditPacket(packet) {
   }
 }
 
-function buildFilePassSummary(packet, pages, pageById, actionableFindings) {
+function buildFilePassSummary(packet, pages, pageById, findings) {
   const inputFiles = Array.isArray(packet.materialFiles) ? packet.materialFiles.filter(Boolean) : []
   const failedFiles = new Set()
-  let missingRequiredCount = 0
 
-  actionableFindings.forEach((finding) => {
+  findings.forEach((finding) => {
     const page = pageById.get(finding.pageId)
     const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
     if (page?.sourceFile) failedFiles.add(page.sourceFile)
     if (evidencePage?.sourceFile) failedFiles.add(evidencePage.sourceFile)
-    if (!page && finding.id?.startsWith('missing-')) {
-      missingRequiredCount += 1
-      failedFiles.add(finding.title.replace(/^缺少必交材料：/, '缺少：'))
-    }
   })
 
-  const totalFiles = Math.max(inputFiles.length || pages.length, pages.length + missingRequiredCount)
+  const totalFiles = inputFiles.length || pages.length
   const failedFileCount = Math.min(failedFiles.size, totalFiles)
 
   return {
