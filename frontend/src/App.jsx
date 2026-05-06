@@ -707,7 +707,7 @@ function MaterialList({ audit, activePageId, onSelectPage }) {
 
 function FindingPanel({ findings, activePageId, packet, onOpenFinding }) {
   const pageById = new Map((packet.pages || []).map((page) => [page.id, page]))
-  const findingGroups = groupFindingsByFile(findings, packet)
+  const findingGroups = groupFindingsByFile(findings, packet, activePageId)
 
   return (
     <aside className="panel finding-panel">
@@ -717,11 +717,11 @@ function FindingPanel({ findings, activePageId, packet, onOpenFinding }) {
       </div>
       <div className="finding-list">
         {findingGroups.map((group) => (
-          <section className="finding-file-group" key={group.file}>
-            <div className="finding-file-head">
+          <section className={group.active ? 'finding-file-group active' : 'finding-file-group'} key={group.file}>
+            <button type="button" className="finding-file-head" onClick={() => onOpenFinding(group.items[0])}>
               <strong>{cleanDisplayText(group.file)}</strong>
               <span>{group.items.length} 项</span>
-            </div>
+            </button>
             {group.items.map((finding) => {
               const page = pageById.get(finding.pageId)
               const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
@@ -1272,7 +1272,7 @@ function groupFindings(findings) {
   }
 }
 
-function groupFindingsByFile(findings, packet) {
+function groupFindingsByFile(findings, packet, activePageId) {
   const pageById = new Map((packet.pages || []).map((page) => [page.id, page]))
   const groups = new Map()
 
@@ -1285,14 +1285,23 @@ function groupFindingsByFile(findings, packet) {
       groups.set(file, {
         file,
         firstPageNo: finding.pageNo || 999,
+        pageIds: new Set(),
         items: []
       })
     }
 
-    groups.get(file).items.push(finding)
+    const group = groups.get(file)
+    if (page?.id) group.pageIds.add(page.id)
+    if (evidencePage?.id) group.pageIds.add(evidencePage.id)
+    group.items.push(finding)
   })
 
-  return Array.from(groups.values()).sort((a, b) => a.firstPageNo - b.firstPageNo || a.file.localeCompare(b.file, 'zh-Hans-CN'))
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      active: Boolean(activePageId && group.pageIds.has(activePageId))
+    }))
+    .sort((a, b) => Number(b.active) - Number(a.active) || a.firstPageNo - b.firstPageNo || a.file.localeCompare(b.file, 'zh-Hans-CN'))
 }
 
 function groupLabel(severity) {

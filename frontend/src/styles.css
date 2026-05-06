@@ -1025,13 +1025,29 @@ a {
   gap: 7px;
 }
 
+.finding-file-group.active {
+  border-color: rgba(15, 142, 170, 0.62);
+  background: #eaf5f8;
+  box-shadow: inset 4px 0 0 var(--cyan);
+}
+
 .finding-file-head {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 4px 3px 7px;
   border-bottom: 1px solid #e4edf2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.finding-file-head:hover strong {
+  color: var(--blue);
 }
 
 .finding-file-head strong {
