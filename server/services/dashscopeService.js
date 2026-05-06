@@ -144,7 +144,7 @@ function fallbackReview(packet, audit, reason = '') {
   const medium = audit.findings.filter((finding) => finding.severity === 'medium').slice(0, 3)
   const review = audit.findings.filter((finding) => finding.severity === 'review').slice(0, 2)
   const lines = [
-    `${packet.label}当前规则审核结果为${audit.summary.riskLevel}，通过率 ${audit.summary.passRate}%。`,
+    `${packet.label}当前规则审核结果为${audit.summary.riskLevel}，文件通过率 ${audit.summary.passRate}%。`,
     high.length ? `优先处理高风险项：${high.map((finding) => finding.title).join('；')}。` : '未发现确定性高风险项。',
     medium.length ? `随后补齐中风险项：${medium.map((finding) => finding.title).join('；')}。` : '中风险项已基本清零。',
     review.length ? `仍需人工复核：${review.map((finding) => finding.title).join('；')}。` : '暂无额外人工复核提示。'

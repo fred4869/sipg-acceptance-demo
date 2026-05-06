@@ -21,8 +21,12 @@ export function auditPacket(packet) {
 
   const totalRules = 30
   const blockingScore = findings.reduce((sum, finding) => sum + severityWeight[finding.severity], 0)
-  const failedRules = findings.filter((finding) => finding.severity !== 'review').length
-  const passRate = Math.max(0, Math.round(((totalRules - failedRules) / totalRules) * 100))
+  const actionableFindings = findings.filter((finding) => finding.severity !== 'review')
+  const failedRules = actionableFindings.length
+  const fileSummary = buildFilePassSummary(packet, pages, pageById, actionableFindings)
+  const passRate = fileSummary.totalFiles
+    ? Math.max(0, Math.round((fileSummary.passedFiles / fileSummary.totalFiles) * 100))
+    : 0
   const riskLevel = blockingScore >= 12 ? '高风险' : blockingScore >= 5 ? '中风险' : '低风险'
 
   return {
@@ -33,14 +37,46 @@ export function auditPacket(packet) {
       passRate,
       riskLevel,
       findingCount: findings.length,
+      actionableCount: actionableFindings.length,
       highCount: findings.filter((finding) => finding.severity === 'high').length,
       mediumCount: findings.filter((finding) => finding.severity === 'medium').length,
+      lowCount: findings.filter((finding) => finding.severity === 'low').length,
       reviewCount: findings.filter((finding) => finding.severity === 'review').length
     },
+    fileSummary,
     findings: findings.sort((a, b) => {
       return severityWeight[b.severity] - severityWeight[a.severity] || a.pageNo - b.pageNo
     }),
     materialStatus: buildMaterialStatus(packet, pageById)
+  }
+}
+
+function buildFilePassSummary(packet, pages, pageById, actionableFindings) {
+  const inputFiles = Array.isArray(packet.materialFiles) ? packet.materialFiles.filter(Boolean) : []
+  const failedFiles = new Set()
+  let missingRequiredCount = 0
+
+  actionableFindings.forEach((finding) => {
+    const page = pageById.get(finding.pageId)
+    const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
+    if (page?.sourceFile) failedFiles.add(page.sourceFile)
+    if (evidencePage?.sourceFile) failedFiles.add(evidencePage.sourceFile)
+    if (!page && finding.id?.startsWith('missing-')) {
+      missingRequiredCount += 1
+      failedFiles.add(finding.title.replace(/^缺少必交材料：/, '缺少：'))
+    }
+  })
+
+  const totalFiles = Math.max(inputFiles.length || pages.length, pages.length + missingRequiredCount)
+  const failedFileCount = Math.min(failedFiles.size, totalFiles)
+
+  return {
+    inputFiles: inputFiles.length,
+    auditedFiles: pages.length,
+    totalFiles,
+    failedFiles: failedFileCount,
+    passedFiles: Math.max(0, totalFiles - failedFileCount),
+    failedFileLabels: Array.from(failedFiles).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
   }
 }
 

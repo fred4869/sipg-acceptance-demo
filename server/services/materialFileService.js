@@ -297,6 +297,7 @@ async function listMaterialFiles(packetDir) {
   return files
     .map((filePath) => path.relative(packetDir, filePath))
     .filter((relativePath) => !relativePath.startsWith('.'))
+    .filter((relativePath) => !/^00-.+\.md$/i.test(path.basename(relativePath)))
     .map((relativePath) => displayMaterialPath(relativePath))
     .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
 }

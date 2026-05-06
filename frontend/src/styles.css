@@ -572,7 +572,7 @@ a {
 .summary-strip {
   padding: 12px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -652,6 +652,14 @@ a {
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
   gap: 20px;
   align-items: center;
+}
+
+.project-card p {
+  margin: 8px 0 0;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .project-card dl {
@@ -754,6 +762,34 @@ a {
 
 .compare-stats {
   grid-template-columns: 1fr;
+}
+
+.second-submit-panel {
+  gap: 10px;
+}
+
+.compare-file-pick {
+  display: grid;
+  gap: 8px;
+}
+
+.compare-second-actions {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.compact-count {
+  padding: 10px;
+}
+
+.compact-count strong {
+  font-size: 24px;
+}
+
+.compact-selected-list {
+  max-height: 96px;
 }
 
 .submission-preview {
@@ -923,6 +959,9 @@ a {
 
 .file-list {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 3px;
 }
 
 .file-list span {

@@ -28,6 +28,7 @@ export default function App() {
   const [aiReviews, setAiReviews] = useState({})
   const [aiLoading, setAiLoading] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState([])
+  const [secondSubmissionFiles, setSecondSubmissionFiles] = useState([])
   const [expandedPacketId, setExpandedPacketId] = useState('issue-demo')
   const [selectedSampleFiles, setSelectedSampleFiles] = useState({})
   const [parseStage, setParseStage] = useState('')
@@ -124,6 +125,7 @@ export default function App() {
       await wait(180)
       openPacket(payload.packet, payload.audit)
       setComparisonRuns([])
+      setSecondSubmissionFiles([])
     } catch (loadError) {
       setError(loadError.message)
     } finally {
@@ -159,6 +161,7 @@ export default function App() {
       setPacketId(payload.packet.id)
       openPacket(payload.packet, payload.audit)
       setComparisonRuns([])
+      setSecondSubmissionFiles([])
     } catch (loadError) {
       setError(loadError.message)
     } finally {
@@ -189,6 +192,44 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packetId: 'fixed-demo', selectedFiles: selectedPaths })
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || '二次提交材料解析失败')
+      setParseStage('audit')
+      await wait(260)
+      setComparisonRuns([
+        { packet, audit },
+        { packet: payload.packet, audit: payload.audit }
+      ])
+      setParseStage('result')
+      await wait(160)
+      setActiveView('compare')
+    } catch (loadError) {
+      setError(loadError.message)
+    } finally {
+      setLoading(false)
+      setParseStage('')
+    }
+  }
+
+  async function parseSecondSubmissionFiles() {
+    if (!packet || !audit) return
+    if (!secondSubmissionFiles.length) {
+      setError('请先选择二次提交材料。')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      setParseStage('read')
+      await wait(240)
+      const files = await Promise.all(secondSubmissionFiles.map(readBrowserFile))
+      setParseStage('ai')
+      const response = await fetch('/api/parse-uploaded', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files })
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || '二次提交材料解析失败')
@@ -269,23 +310,25 @@ export default function App() {
         <>
           <section className="summary-strip">
             <Metric label="风险等级" value={audit.summary.riskLevel} tone={audit.summary.riskLevel === '高风险' ? 'danger' : audit.summary.riskLevel === '中风险' ? 'warning' : 'safe'} />
-            <Metric label="通过率" value={`${audit.summary.passRate}%`} tone="safe" />
-            <Metric label="问题数量" value={audit.summary.findingCount} tone="warning" />
+            <Metric label="文件通过率" value={`${audit.summary.passRate}%`} tone="safe" />
+            <Metric label="风险项" value={audit.summary.actionableCount} tone="warning" />
             <Metric label="高风险项" value={audit.summary.highCount} tone="danger" />
+            <Metric label="中风险项" value={audit.summary.mediumCount} tone="warning" />
             <Metric label="人工复核" value={audit.summary.reviewCount} tone="review" />
           </section>
 
           <section className="project-card">
             <div>
-              <span className="section-label">权威字段来源</span>
+              <span className="section-label">项目基准信息</span>
               <h2>{cleanDisplayText(packet.authoritativeProject.projectName)}</h2>
+              <p>从立项文件和计划任务书抽取，用于核对封面、申请书、报告和经费表中的关键字段。</p>
             </div>
             <dl>
               <div><dt>项目编号</dt><dd>{cleanDisplayText(packet.authoritativeProject.projectNo)}</dd></div>
               <div><dt>承担单位</dt><dd>{cleanDisplayText(packet.authoritativeProject.owner)}</dd></div>
               <div><dt>项目负责人</dt><dd>{cleanDisplayText(packet.authoritativeProject.leader)}</dd></div>
               <div><dt>项目执行期</dt><dd>{cleanDisplayText(packet.authoritativeProject.period)}</dd></div>
-              <div><dt>解析文件</dt><dd>{packet.materialFiles?.length || packet.pages.length} 个</dd></div>
+              <div><dt>输入文件</dt><dd>{audit.fileSummary?.inputFiles || packet.materialFiles?.length || packet.pages.length} 个</dd></div>
             </dl>
           </section>
 
@@ -346,8 +389,11 @@ export default function App() {
               packet={packet}
               fixedPacketMeta={fixedPacketMeta}
               comparisonRuns={comparisonRuns}
+              secondFiles={secondSubmissionFiles}
               loading={loading}
               onGenerateComparison={generateComparison}
+              onSecondFilesChange={setSecondSubmissionFiles}
+              onParseSecondFiles={parseSecondSubmissionFiles}
             />
           )}
         </>
@@ -536,7 +582,7 @@ function InputPanel({
               {loading ? '解析中...' : '解析上传材料并审核'}
             </button>
             <div className="selected-file-list">
-              {selectedFiles.slice(0, 10).map((file) => (
+              {selectedFiles.map((file) => (
                 <span key={file.webkitRelativePath || file.name}>{displayBrowserFileName(file.webkitRelativePath || file.name)}</span>
               ))}
             </div>
@@ -548,14 +594,15 @@ function InputPanel({
 }
 
 function OverviewPanel({ audit, packet, groupedFindings, aiReview, aiLoading, onGenerateAi, onOpenFinding }) {
-  const mustFix = audit.findings.filter((finding) => finding.severity !== 'review').slice(0, 8)
+  const mustFix = audit.findings.filter((finding) => finding.severity !== 'review')
+  const fileSummary = audit.fileSummary || {}
 
   return (
     <section className="overview-grid">
       <div className="panel overview-panel">
         <div className="panel-title">
           <span className="section-label">整改优先级</span>
-          <h2>先处理 {audit.summary.highCount} 个高风险项</h2>
+          <h2>{audit.summary.actionableCount} 个风险项，{audit.summary.reviewCount} 个人工复核</h2>
         </div>
         <div className="finding-groups">
           {Object.entries(groupedFindings).map(([severity, items]) => (
@@ -617,10 +664,13 @@ function OverviewPanel({ audit, packet, groupedFindings, aiReview, aiLoading, on
       <div className="panel file-panel">
         <div className="panel-title">
           <span className="section-label">解析文件</span>
-          <h2>{packet.materialFiles?.length || 0} 个输入文件</h2>
+          <h2>{fileSummary.inputFiles || packet.materialFiles?.length || 0} 个输入文件</h2>
         </div>
+        <p className="muted-small">
+          文件通过率按已接收/应审核文件计算：{fileSummary.passedFiles ?? 0} 个通过，{fileSummary.failedFiles ?? 0} 个存在确定性风险。
+        </p>
         <div className="file-list">
-          {(packet.materialFiles || []).slice(0, 14).map((file) => <span key={file}>{cleanDisplayText(file)}</span>)}
+          {(packet.materialFiles || []).map((file) => <span key={file}>{cleanDisplayText(file)}</span>)}
         </div>
       </div>
     </section>
@@ -693,10 +743,20 @@ function FindingPanel({ findings, activePageId, packet, onOpenFinding }) {
   )
 }
 
-function ComparePanel({ audit, packet, fixedPacketMeta, comparisonRuns, loading, onGenerateComparison }) {
+function ComparePanel({
+  audit,
+  packet,
+  fixedPacketMeta,
+  comparisonRuns,
+  secondFiles,
+  loading,
+  onGenerateComparison,
+  onSecondFilesChange,
+  onParseSecondFiles
+}) {
   const currentRun = comparisonRuns[0] || { packet, audit }
   const secondRun = comparisonRuns[1]
-  const resolvedCount = secondRun ? Math.max(0, currentRun.audit.summary.findingCount - secondRun.audit.summary.findingCount) : 0
+  const resolvedCount = secondRun ? Math.max(0, currentRun.audit.summary.actionableCount - secondRun.audit.summary.actionableCount) : 0
   const [leftPageId, setLeftPageId] = useState('')
   const [rightPageId, setRightPageId] = useState('')
 
@@ -713,16 +773,44 @@ function ComparePanel({ audit, packet, fixedPacketMeta, comparisonRuns, loading,
             <span className="section-label">当前提交</span>
             <h2>{cleanDisplayText(currentRun.packet.label)}</h2>
           </div>
-          <Metric label="当前问题数" value={currentRun.audit.summary.findingCount} tone="warning" />
+          <Metric label="当前风险项" value={currentRun.audit.summary.actionableCount} tone="warning" />
+          <Metric label="当前输入文件" value={currentRun.audit.fileSummary?.inputFiles || currentRun.packet.materialFiles?.length || 0} tone="safe" />
         </div>
-        <div className="panel compare-panel">
+        <div className="panel compare-panel second-submit-panel">
           <div className="panel-title">
             <span className="section-label">二次提交</span>
             <h2>{cleanDisplayText(secondRun?.packet.label || fixedPacketMeta?.label || '整改后再次提交')}</h2>
           </div>
-          <button type="button" className="primary-action" onClick={onGenerateComparison} disabled={loading}>
-            {loading ? '生成中...' : secondRun ? '重新生成二次提交对比' : '生成二次提交对比'}
+          <label className="file-pick compare-file-pick">
+            <input
+              type="file"
+              multiple
+              webkitdirectory=""
+              directory=""
+              accept=".doc,.docx,.pdf,.xls,.xlsx"
+              onChange={(event) => onSecondFilesChange(Array.from(event.target.files || []))}
+            />
+            上传二次提交材料
+          </label>
+          <div className="compare-second-actions">
+            <div className="upload-count compact-count">
+              <span>已选文件</span>
+              <strong>{secondFiles.length}</strong>
+            </div>
+            <button type="button" className="primary-action" onClick={onParseSecondFiles} disabled={loading || !secondFiles.length}>
+              {loading ? '解析中...' : '提交二次预审'}
+            </button>
+          </div>
+          <button type="button" className="secondary-action" onClick={onGenerateComparison} disabled={loading}>
+            {loading ? '生成中...' : '使用补充材料样例'}
           </button>
+          {!!secondFiles.length && (
+            <div className="selected-file-list compact-selected-list">
+              {secondFiles.map((file) => (
+                <span key={file.webkitRelativePath || file.name}>{displayBrowserFileName(file.webkitRelativePath || file.name)}</span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="panel compare-panel">
           <div className="panel-title">
@@ -730,9 +818,9 @@ function ComparePanel({ audit, packet, fixedPacketMeta, comparisonRuns, loading,
             <h2>{secondRun ? '已生成对比' : currentRun.audit.summary.riskLevel}</h2>
           </div>
           <div className="compare-stats">
-            <Metric label="当前通过率" value={`${currentRun.audit.summary.passRate}%`} tone="safe" />
-            <Metric label="二次通过率" value={secondRun ? `${secondRun.audit.summary.passRate}%` : '待生成'} tone="safe" />
-            <Metric label="已消除问题" value={resolvedCount} tone="safe" />
+            <Metric label="当前文件通过率" value={`${currentRun.audit.summary.passRate}%`} tone="safe" />
+            <Metric label="二次文件通过率" value={secondRun ? `${secondRun.audit.summary.passRate}%` : '待生成'} tone="safe" />
+            <Metric label="已消除风险项" value={resolvedCount} tone="safe" />
           </div>
         </div>
       </section>
@@ -765,7 +853,7 @@ function SubmissionPreview({ title, run, selectedPageId, onSelectPage }) {
     <div className="panel submission-preview">
       <div className="panel-title">
         <span className="section-label">{title}</span>
-        <h2>{run.audit.summary.riskLevel} · {run.audit.summary.passRate}%</h2>
+        <h2>{run.audit.summary.riskLevel} · 文件通过率 {run.audit.summary.passRate}%</h2>
       </div>
       <div className="preview-layout">
         <div className="preview-page-list">
