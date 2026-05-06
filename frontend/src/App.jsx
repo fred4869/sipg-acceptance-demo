@@ -707,37 +707,46 @@ function MaterialList({ audit, activePageId, onSelectPage }) {
 
 function FindingPanel({ findings, activePageId, packet, onOpenFinding }) {
   const pageById = new Map((packet.pages || []).map((page) => [page.id, page]))
+  const findingGroups = groupFindingsByFile(findings, packet)
 
   return (
     <aside className="panel finding-panel">
       <div className="panel-title">
         <span className="section-label">审核发现</span>
-        <h2>{findings.length} 项</h2>
+        <h2>{findingGroups.length} 个文件 / {findings.length} 项</h2>
       </div>
       <div className="finding-list">
-        {findings.map((finding) => {
-          const page = pageById.get(finding.pageId)
-          const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
-          return (
-            <button
-              type="button"
-              key={finding.id}
-              className={finding.pageId === activePageId ? 'finding-card active' : 'finding-card'}
-              onClick={() => onOpenFinding(finding)}
-            >
-              <div className="finding-head">
-                <span className={`severity ${severityClass[finding.severity]}`}>{severityLabel[finding.severity]}</span>
-                <span>{cleanDisplayText(finding.type)}</span>
-                <em>第 {finding.pageNo} 页</em>
-              </div>
-              <strong>{cleanDisplayText(finding.title)}</strong>
-              <p>{cleanDisplayText(finding.detail)}</p>
-              <small className="evidence-line">来源：{cleanDisplayText(page?.sourceFile || '规则推断')}</small>
-              {evidencePage && <small className="evidence-line">正文证据：{cleanDisplayText(evidencePage.sourceFile)}</small>}
-              <small className="evidence-line">建议：{cleanDisplayText(finding.suggestion)}</small>
-            </button>
-          )
-        })}
+        {findingGroups.map((group) => (
+          <section className="finding-file-group" key={group.file}>
+            <div className="finding-file-head">
+              <strong>{cleanDisplayText(group.file)}</strong>
+              <span>{group.items.length} 项</span>
+            </div>
+            {group.items.map((finding) => {
+              const page = pageById.get(finding.pageId)
+              const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
+              return (
+                <button
+                  type="button"
+                  key={finding.id}
+                  className={finding.pageId === activePageId ? 'finding-card active' : 'finding-card'}
+                  onClick={() => onOpenFinding(finding)}
+                >
+                  <div className="finding-head">
+                    <span className={`severity ${severityClass[finding.severity]}`}>{severityLabel[finding.severity]}</span>
+                    <span>{cleanDisplayText(finding.type)}</span>
+                    <em>第 {finding.pageNo} 页</em>
+                  </div>
+                  <strong>{cleanDisplayText(finding.title)}</strong>
+                  <p>{cleanDisplayText(finding.detail)}</p>
+                  <small className="evidence-line">定位文件：{cleanDisplayText(page?.sourceFile || group.file)}</small>
+                  {evidencePage && <small className="evidence-line">关联证据：{cleanDisplayText(evidencePage.sourceFile)}</small>}
+                  <small className="evidence-line">建议：{cleanDisplayText(finding.suggestion)}</small>
+                </button>
+              )
+            })}
+          </section>
+        ))}
       </div>
     </aside>
   )
@@ -1261,6 +1270,29 @@ function groupFindings(findings) {
     low: findings.filter((finding) => finding.severity === 'low'),
     review: findings.filter((finding) => finding.severity === 'review')
   }
+}
+
+function groupFindingsByFile(findings, packet) {
+  const pageById = new Map((packet.pages || []).map((page) => [page.id, page]))
+  const groups = new Map()
+
+  findings.forEach((finding) => {
+    const page = pageById.get(finding.pageId)
+    const evidencePage = finding.evidencePageId ? pageById.get(finding.evidencePageId) : null
+    const file = page?.sourceFile || evidencePage?.sourceFile || `缺失材料 / ${finding.title.replace(/^缺少必交材料：/, '')}`
+
+    if (!groups.has(file)) {
+      groups.set(file, {
+        file,
+        firstPageNo: finding.pageNo || 999,
+        items: []
+      })
+    }
+
+    groups.get(file).items.push(finding)
+  })
+
+  return Array.from(groups.values()).sort((a, b) => a.firstPageNo - b.firstPageNo || a.file.localeCompare(b.file, 'zh-Hans-CN'))
 }
 
 function groupLabel(severity) {

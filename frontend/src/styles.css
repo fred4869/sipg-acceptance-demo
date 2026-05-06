@@ -1016,6 +1016,42 @@ a {
   gap: 8px;
 }
 
+.finding-file-group {
+  border: 1px solid #d9e6ed;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  padding: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.finding-file-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 3px 7px;
+  border-bottom: 1px solid #e4edf2;
+}
+
+.finding-file-head strong {
+  min-width: 0;
+  color: var(--blue-dark);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.finding-file-head span {
+  border: 1px solid #cbd8e1;
+  background: #eef5f8;
+  color: var(--blue-dark);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .material-row,
 .finding-card {
   width: 100%;
