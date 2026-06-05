@@ -14,10 +14,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .ai_service import dashscope_configured, generate_ai_benefit, generate_ai_review, generate_ai_rewrite
-from .config import DASHSCOPE_BENEFIT_MODEL, DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL, FRONTEND_DIST_DIR, OUTPUT_DIR, UPLOAD_DIR, ensure_runtime_dirs
+from .config import DASHSCOPE_BENEFIT_MODEL, DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL, FRONTEND_DIST_DIR, OUTPUT_DIR, PREVIEW_DIR, UPLOAD_DIR, ensure_runtime_dirs
 from .docx_exporter import export_rewrite_docx
 from .document_parser import parse_document
 from .format_auditor import audit_format
+from .preview_renderer import build_rendered_preview
 from .rules import SIPG_FORMAT_RULES
 from .rewriter import build_ai_rewrite
 
@@ -90,6 +91,10 @@ async def research_review(files: list[UploadFile] = File(...)) -> dict:
         document = parse_document(target, safe_name)
         document["sourcePath"] = str(target)
         document["originalUrl"] = f"/api/research-runs/{run_id}/documents/{document['id']}/original"
+        preview = build_rendered_preview(target, document, PREVIEW_DIR / run_id / document["id"])
+        document["preview"] = preview
+        if preview.get("available"):
+            document["previewUrl"] = f"/api/research-runs/{run_id}/documents/{document['id']}/preview"
         document["capabilities"] = build_document_capabilities(document)
         format_issues = audit_format(document)
         try:
@@ -183,6 +188,17 @@ def download_original(run_id: str, document_id: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="原文件不存在或已过期。")
     media_type = mimetypes.guess_type(document["filename"])[0] or "application/octet-stream"
     return FileResponse(path, filename=document["filename"], media_type=media_type)
+
+
+@app.get("/api/research-runs/{run_id}/documents/{document_id}/preview")
+def preview_original(run_id: str, document_id: str) -> FileResponse:
+    run = get_run(run_id)
+    document = get_document(run, document_id)
+    preview = document.get("preview") or {}
+    path = Path(preview.get("path", ""))
+    if not preview.get("available") or not path.exists():
+        raise HTTPException(status_code=404, detail=preview.get("message") or "预览文件不存在或已过期。")
+    return FileResponse(path, filename=f"{Path(document['filename']).stem}.pdf", media_type="application/pdf", content_disposition_type="inline")
 
 
 def get_run(run_id: str) -> dict:
@@ -373,11 +389,13 @@ def ai_review_meta(ai_result: dict) -> dict:
 
 
 def build_document_capabilities(document: dict) -> list[str]:
+    preview = document.get("preview") or {}
+    preview_capability = "原文版式预览" if preview.get("available") else "文本预览"
     if document["stats"].get("hasFormatMetadata"):
-        return ["Word精细格式审核", "正文结构解析", "AI内容结构审核", "原文件查看/下载"]
+        return ["Word精细格式审核", "正文结构解析", "AI内容结构审核", preview_capability, "原文件查看/下载"]
     if document.get("fileType") == "pdf":
-        return ["PDF文本级解析", "AI内容结构审核", "原文件查看/下载"]
-    return ["文本级解析", "AI内容结构审核", "原文件查看/下载"]
+        return ["PDF文本级解析", "AI内容结构审核", preview_capability, "原文件查看/下载"]
+    return ["文本级解析", "AI内容结构审核", preview_capability, "原文件查看/下载"]
 
 
 def normalize_score(value) -> int:
@@ -431,6 +449,7 @@ def summarize_run(documents: list[dict], issues: list[dict], issue_groups: list[
 def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[dict]:
     file_types = sorted({doc.get("fileType", "unknown") for doc in documents})
     has_format_metadata = sum(1 for doc in documents if doc.get("stats", {}).get("hasFormatMetadata"))
+    rendered_previews = sum(1 for doc in documents if doc.get("preview", {}).get("available"))
     format_issues = [issue for issue in issues if issue["category"] == "format"]
     ai_issues = [issue for issue in issues if issue.get("source") == "ai"]
     issue_groups = group_issues(issues)
@@ -457,17 +476,18 @@ def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[di
             "id": "parse",
             "name": "正文与格式解析",
             "status": "done",
-            "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析；其他文件执行文本级解析。",
+            "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析；{rendered_previews} 个文件生成原文版式预览。",
             "outputs": [
                 {"label": "精细格式文件", "value": has_format_metadata},
+                {"label": "版式预览文件", "value": rendered_previews},
                 {"label": "总段落数", "value": sum(doc.get("stats", {}).get("paragraphCount", 0) for doc in documents)},
                 {"label": "总标题数", "value": sum(doc.get("stats", {}).get("headingCount", 0) for doc in documents)},
             ],
             "items": [
                 {
                     "title": doc["filename"],
-                    "meta": "可做精细格式审核" if doc.get("stats", {}).get("hasFormatMetadata") else "文本级审核",
-                    "body": f"解析段落 {doc.get('stats', {}).get('paragraphCount', 0)} 个，标题 {doc.get('stats', {}).get('headingCount', 0)} 个，图题 {doc.get('stats', {}).get('figureCount', 0)} 个，表题 {doc.get('stats', {}).get('tableTitleCount', 0)} 个。",
+                    "meta": f"{'可做精细格式审核' if doc.get('stats', {}).get('hasFormatMetadata') else '文本级审核'} · {'已生成版式预览' if doc.get('preview', {}).get('available') else '未生成版式预览'}",
+                    "body": f"解析段落 {doc.get('stats', {}).get('paragraphCount', 0)} 个，标题 {doc.get('stats', {}).get('headingCount', 0)} 个，图题 {doc.get('stats', {}).get('figureCount', 0)} 个，表题 {doc.get('stats', {}).get('tableTitleCount', 0)} 个，预览页数 {doc.get('preview', {}).get('pageCount') or doc.get('stats', {}).get('pageCount', 0)} 页。",
                 }
                 for doc in documents
             ],
@@ -616,6 +636,8 @@ def sanitize_run(run: dict) -> dict:
     for document in cloned["documents"]:
         document.pop("text", None)
         document.pop("sourcePath", None)
+        if document.get("preview"):
+            document["preview"].pop("path", None)
         document["paragraphs"] = document["paragraphs"][:240]
     return cloned
 

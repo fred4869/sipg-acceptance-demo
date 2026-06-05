@@ -465,6 +465,7 @@ function DocumentPreview({ document, activeIssue, activePageNo, onPageChange }) 
   const paragraphIndexes = new Set(page.paragraphIndexes || [])
   const activeIndexes = new Set(activeIssue?.paragraphIndexes || [])
   const visibleParagraphs = (document.paragraphs || []).filter((paragraph) => paragraphIndexes.has(paragraph.index))
+  const renderedPreviewUrl = document.previewUrl ? `${document.previewUrl}#page=${page.pageNo}&zoom=page-width` : ''
   return (
     <section className="panel document-preview">
       <div className="panel-title">
@@ -473,6 +474,7 @@ function DocumentPreview({ document, activeIssue, activePageNo, onPageChange }) 
         <p>{document.filename} · {document.stats.pageCount || pages.length} 页 · {document.stats.paragraphCount} 段</p>
       </div>
       <div className="doc-meta-row">
+        {document.previewUrl && <a className="source-link" href={document.previewUrl} target="_blank" rel="noreferrer">打开版式预览</a>}
         {document.originalUrl && <a className="source-link" href={document.originalUrl} target="_blank" rel="noreferrer">查看/下载原文件</a>}
         {document.capabilities?.map((item) => <span key={item}>{item}</span>)}
       </div>
@@ -489,6 +491,7 @@ function DocumentPreview({ document, activeIssue, activePageNo, onPageChange }) 
       )}
       <div className="page-toolbar">
         <strong>第 {page.pageNo} 页</strong>
+        {document.preview?.available && <span>{document.preview.message}</span>}
         <div>
           {pages.map((item) => (
             <button
@@ -501,6 +504,24 @@ function DocumentPreview({ document, activeIssue, activePageNo, onPageChange }) 
             </button>
           ))}
         </div>
+      </div>
+      {renderedPreviewUrl ? (
+        <div className="rendered-preview-shell">
+          <iframe
+            key={`${document.id}-${page.pageNo}`}
+            title={`${document.filename} 原文版式预览`}
+            src={renderedPreviewUrl}
+          />
+        </div>
+      ) : (
+        <div className="preview-fallback">
+          <strong>暂无法生成版式预览</strong>
+          <p>{document.preview?.message || '当前文件仅支持解析文本预览。'}</p>
+        </div>
+      )}
+      <div className="parsed-location-title">
+        <strong>解析定位文本</strong>
+        <span>{activeIssue ? `${activeIssue.title} · ${activeIssue.pageLabel}` : '当前页段落'}</span>
       </div>
       <div className="paragraph-list">
         {visibleParagraphs.map((paragraph) => (
