@@ -8,6 +8,7 @@ export default function App() {
   const [run, setRun] = useState(null)
   const [activeDocId, setActiveDocId] = useState('')
   const [activeIssueId, setActiveIssueId] = useState('')
+  const [activePageNo, setActivePageNo] = useState(1)
   const [loadingStage, setLoadingStage] = useState('')
   const [error, setError] = useState('')
   const [rewriteLoading, setRewriteLoading] = useState(false)
@@ -28,13 +29,18 @@ export default function App() {
     return run?.documents?.find((document) => document.id === activeDocId) || run?.documents?.[0] || null
   }, [run, activeDocId])
 
-  const activeIssues = useMemo(() => {
-    return (run?.issues || []).filter((issue) => issue.documentId === activeDoc?.id)
+  const activeIssueGroups = useMemo(() => {
+    return (run?.issueGroups || []).filter((group) => group.documentId === activeDoc?.id)
   }, [run, activeDoc])
 
   const activeIssue = useMemo(() => {
-    return activeIssues.find((issue) => issue.id === activeIssueId) || activeIssues[0] || null
-  }, [activeIssues, activeIssueId])
+    return activeIssueGroups.find((group) => group.id === activeIssueId) || activeIssueGroups[0] || null
+  }, [activeIssueGroups, activeIssueId])
+
+  const previewPageNo = useMemo(() => {
+    if (activeIssue?.pageNos?.length && !activeIssue.pageNos.includes(activePageNo)) return activeIssue.pageNos[0]
+    return activePageNo || activeIssue?.pageNos?.[0] || 1
+  }, [activeIssue, activePageNo])
 
   async function reviewFiles() {
     if (!files.length) {
@@ -56,6 +62,7 @@ export default function App() {
       setRun(payload)
       setActiveDocId(payload.documents?.[0]?.id || '')
       setActiveIssueId('')
+      setActivePageNo(1)
     } catch (reviewError) {
       setError(reviewError.message)
     } finally {
@@ -177,11 +184,24 @@ export default function App() {
             onSelect={(id) => {
               setActiveDocId(id)
               setActiveIssueId('')
+              setActivePageNo(1)
             }}
           />
           <section className="workspace">
-            <DocumentPreview document={activeDoc} activeIssue={activeIssue} />
-            <IssuePanel issues={activeIssues} activeIssueId={activeIssue?.id} onSelectIssue={setActiveIssueId} />
+            <DocumentPreview
+              document={activeDoc}
+              activeIssue={activeIssue}
+              activePageNo={previewPageNo}
+              onPageChange={setActivePageNo}
+            />
+            <IssuePanel
+              groups={activeIssueGroups}
+              activeGroupId={activeIssue?.id}
+              onSelectGroup={(group) => {
+                setActiveIssueId(group.id)
+                setActivePageNo(group.pageNos?.[0] || 1)
+              }}
+            />
             <OptimizationPanel
               document={activeDoc}
               rewrite={currentRewrite}
@@ -331,8 +351,8 @@ function SummaryStrip({ run }) {
     <section className="summary-strip">
       <Metric label="综合评分" value={`${run.summary.averageScore}分`} tone={run.summary.averageScore < 60 ? 'danger' : run.summary.averageScore < 80 ? 'warning' : 'safe'} />
       <Metric label="审核文件" value={run.summary.documentCount} />
-      <Metric label="问题总数" value={run.summary.issueCount} tone="warning" />
-      <Metric label="高风险" value={run.summary.highCount} tone="danger" />
+      <Metric label="问题类别" value={run.summary.issueGroupCount ?? run.summary.issueCount} tone="warning" />
+      <Metric label="高风险类" value={run.summary.highGroupCount ?? run.summary.highCount} tone="danger" />
       <Metric label="格式问题" value={run.summary.formatCount} />
       <Metric label="内容结构" value={run.summary.contentCount} />
     </section>
@@ -359,7 +379,7 @@ function DocumentTabs({ documents, activeDocId, onSelect }) {
           onClick={() => onSelect(document.id)}
         >
           <strong>{document.filename}</strong>
-          <span>{document.diagnosis.reportType} · {document.diagnosis.score}分 · {document.issueCounts.total}项</span>
+          <span>{document.diagnosis.reportType} · {document.diagnosis.score}分 · {document.issueGroupCount ?? document.issueCounts.total}类问题</span>
           {document.ai?.enabled && <em>{document.ai.provider} · {document.ai.model}</em>}
         </button>
       ))}
@@ -367,15 +387,19 @@ function DocumentTabs({ documents, activeDocId, onSelect }) {
   )
 }
 
-function DocumentPreview({ document, activeIssue }) {
+function DocumentPreview({ document, activeIssue, activePageNo, onPageChange }) {
   if (!document) return null
-  const activeIndex = activeIssue?.paragraphIndex
+  const pages = document.pages?.length ? document.pages : [{ pageNo: 1, paragraphIndexes: document.paragraphs?.map((item) => item.index) || [] }]
+  const page = pages.find((item) => item.pageNo === activePageNo) || pages[0]
+  const paragraphIndexes = new Set(page.paragraphIndexes || [])
+  const activeIndexes = new Set(activeIssue?.paragraphIndexes || [])
+  const visibleParagraphs = (document.paragraphs || []).filter((paragraph) => paragraphIndexes.has(paragraph.index))
   return (
     <section className="panel document-preview">
       <div className="panel-title">
-        <span className="section-label">原文定位</span>
+        <span className="section-label">原文预览</span>
         <h2>{document.title}</h2>
-        <p>{document.filename} · {document.stats.paragraphCount} 段 · {document.stats.headingCount} 个标题</p>
+        <p>{document.filename} · {document.stats.pageCount || pages.length} 页 · {document.stats.paragraphCount} 段</p>
       </div>
       <div className="doc-meta-row">
         {document.originalUrl && <a className="source-link" href={document.originalUrl} target="_blank" rel="noreferrer">查看/下载原文件</a>}
@@ -392,13 +416,28 @@ function DocumentPreview({ document, activeIssue }) {
           {document.warnings.map((warning) => <span key={warning}>{warning}</span>)}
         </div>
       )}
+      <div className="page-toolbar">
+        <strong>第 {page.pageNo} 页</strong>
+        <div>
+          {pages.map((item) => (
+            <button
+              key={item.pageNo}
+              type="button"
+              className={item.pageNo === page.pageNo ? 'page-button active' : activeIssue?.pageNos?.includes(item.pageNo) ? 'page-button related' : 'page-button'}
+              onClick={() => onPageChange(item.pageNo)}
+            >
+              {item.pageNo}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="paragraph-list">
-        {document.paragraphs.slice(0, 180).map((paragraph) => (
+        {visibleParagraphs.map((paragraph) => (
           <article
             key={paragraph.index}
-            className={`${paragraph.kind === 'heading' ? 'paragraph heading' : 'paragraph'} ${paragraph.index === activeIndex ? 'active' : ''}`}
+            className={`${paragraph.kind === 'heading' ? 'paragraph heading' : 'paragraph'} ${activeIndexes.has(paragraph.index) ? 'active' : ''}`}
           >
-            <span>{paragraph.kind === 'heading' ? `标题${paragraph.level || ''}` : `段落 ${paragraph.index + 1}`}</span>
+            <span>{paragraph.kind === 'heading' ? `第${paragraph.pageNo || page.pageNo}页 · 标题${paragraph.level || ''}` : `第${paragraph.pageNo || page.pageNo}页 · 段落 ${paragraph.index + 1}`}</span>
             <p>{paragraph.text}</p>
             {paragraph.format?.font && (
               <small>{paragraph.format.font} / {paragraph.format.sizePt || '-'}pt / {paragraph.format.lineSpacing || '-'}倍行距</small>
@@ -410,13 +449,13 @@ function DocumentPreview({ document, activeIssue }) {
   )
 }
 
-function IssuePanel({ issues, activeIssueId, onSelectIssue }) {
-  const grouped = groupByCategory(issues)
+function IssuePanel({ groups, activeGroupId, onSelectGroup }) {
+  const grouped = groupByCategory(groups)
   return (
     <section className="panel issue-panel">
       <div className="panel-title">
         <span className="section-label">审核发现</span>
-        <h2>{issues.length} 项问题</h2>
+        <h2>{groups.length} 类问题</h2>
       </div>
       <div className="issue-groups">
         {Object.entries(grouped).map(([category, items]) => (
@@ -425,22 +464,22 @@ function IssuePanel({ issues, activeIssueId, onSelectIssue }) {
               <strong>{categoryText[category] || category}</strong>
               <span>{items.length}项</span>
             </div>
-            {items.map((issue) => (
+            {items.map((group) => (
               <button
-                key={issue.id}
+                key={group.id}
                 type="button"
-                className={issue.id === activeIssueId ? 'issue-card active' : 'issue-card'}
-                onClick={() => onSelectIssue(issue.id)}
+                className={group.id === activeGroupId ? 'issue-card active' : 'issue-card'}
+                onClick={() => onSelectGroup(group)}
               >
                 <div>
-                  <span className={`severity ${issue.severity}`}>{severityText[issue.severity] || issue.severity}</span>
-                  <em>{issue.paragraphIndex === null || issue.paragraphIndex === undefined ? '全文' : `第${issue.paragraphIndex + 1}段`}</em>
+                  <span className={`severity ${group.severity}`}>{severityText[group.severity] || group.severity}</span>
+                  <em>{group.pageLabel} · {group.count}处</em>
                 </div>
-                <strong>{issue.title}</strong>
-                <span className="issue-source">{issue.source === 'ai' ? `AI审核 · ${issue.aiModel || ''}` : '格式规则'}</span>
-                <p><b>实际问题：</b>{issue.actual}</p>
-                <p><b>标准要求：</b>{issue.expected}</p>
-                <small><b>整改建议：</b>{issue.suggestion}</small>
+                <strong>{group.title}</strong>
+                <span className="issue-source">{group.source === 'ai' ? `AI审核 · ${group.aiModel || ''}` : '格式规则'}</span>
+                <p><b>标准要求：</b>{group.expected}</p>
+                {group.samples?.[0]?.actual && <p><b>代表问题：</b>{group.samples[0].actual}</p>}
+                <small><b>统一整改：</b>{group.suggestion}</small>
               </button>
             ))}
           </div>

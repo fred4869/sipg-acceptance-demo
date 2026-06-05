@@ -111,6 +111,7 @@ def parse_docx(file_path: Path, original_name: str) -> dict:
         )
         full_text_parts.append(text)
 
+    pages = paginate_paragraphs(paragraphs)
     headings = [p for p in paragraphs if p["kind"] == "heading"]
     title = infer_title(original_name, paragraphs)
     return {
@@ -120,9 +121,11 @@ def parse_docx(file_path: Path, original_name: str) -> dict:
         "title": title,
         "text": "\n".join(full_text_parts),
         "paragraphs": paragraphs,
+        "pages": pages,
         "headings": headings,
         "stats": {
             "paragraphCount": len(paragraphs),
+            "pageCount": len(pages),
             "headingCount": len(headings),
             "figureCount": figure_count,
             "tableTitleCount": table_title_count,
@@ -135,12 +138,54 @@ def parse_docx(file_path: Path, original_name: str) -> dict:
 def parse_pdf(file_path: Path, original_name: str) -> dict:
     try:
         reader = PdfReader(str(file_path))
-        pages = [page.extract_text() or "" for page in reader.pages]
-        text = "\n".join(pages)
+        page_texts = [page.extract_text() or "" for page in reader.pages]
+        text = "\n".join(page_texts)
     except Exception:
+        page_texts = []
         text = ""
 
-    return build_text_document(original_name, "pdf", text, ["PDF 仅执行文本级审核；字体、段落、缩进等精细格式建议以 Word 源文件为准。"])
+    paragraphs = []
+    for page_index, page_text in enumerate(page_texts):
+        for part in re.split(r"\n{1,}", page_text or ""):
+            normalized = normalize_text(part)
+            if not normalized:
+                continue
+            kind, level = infer_paragraph_kind(normalized, "")
+            paragraphs.append(
+                {
+                    "index": len(paragraphs),
+                    "text": normalized,
+                    "kind": kind,
+                    "level": level,
+                    "style": "",
+                    "format": {},
+                    "pageNo": page_index + 1,
+                }
+            )
+    if not paragraphs and text:
+        return build_text_document(original_name, "pdf", text, ["PDF 仅执行文本级审核；字体、段落、缩进等精细格式建议以 Word 源文件为准。"])
+
+    pages = build_pages_from_page_texts(page_texts, paragraphs)
+    headings = [p for p in paragraphs if p["kind"] == "heading"]
+    return {
+        "id": str(uuid.uuid4()),
+        "filename": original_name,
+        "fileType": "pdf",
+        "title": infer_title(original_name, paragraphs),
+        "text": "\n".join(p["text"] for p in paragraphs),
+        "paragraphs": paragraphs,
+        "pages": pages,
+        "headings": headings,
+        "stats": {
+            "paragraphCount": len(paragraphs),
+            "pageCount": len(pages),
+            "headingCount": len(headings),
+            "figureCount": sum(1 for p in paragraphs if p["text"].startswith("图")),
+            "tableTitleCount": sum(1 for p in paragraphs if p["text"].startswith("表")),
+            "hasFormatMetadata": False,
+        },
+        "warnings": ["PDF 仅执行文本级审核；字体、段落、缩进等精细格式建议以 Word 源文件为准。"],
+    }
 
 
 def build_text_document(original_name: str, file_type: str, text: str, warnings: list[str]) -> dict:
@@ -156,6 +201,7 @@ def build_text_document(original_name: str, file_type: str, text: str, warnings:
         for i, part in enumerate(re.split(r"\n{1,}", text or ""))
         if normalize_text(part)
     ]
+    pages = paginate_paragraphs(paragraphs)
     headings = [p for p in paragraphs if p["kind"] == "heading"]
     return {
         "id": str(uuid.uuid4()),
@@ -164,9 +210,11 @@ def build_text_document(original_name: str, file_type: str, text: str, warnings:
         "title": infer_title(original_name, paragraphs),
         "text": "\n".join(p["text"] for p in paragraphs),
         "paragraphs": paragraphs,
+        "pages": pages,
         "headings": headings,
         "stats": {
             "paragraphCount": len(paragraphs),
+            "pageCount": len(pages),
             "headingCount": len(headings),
             "figureCount": sum(1 for p in paragraphs if p["text"].startswith("图")),
             "tableTitleCount": sum(1 for p in paragraphs if p["text"].startswith("表")),
@@ -247,3 +295,47 @@ def infer_title(original_name: str, paragraphs: list[dict]) -> str:
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").replace("\u200f", "").strip())
+
+
+def paginate_paragraphs(paragraphs: list[dict], max_chars: int = 1800, max_paragraphs: int = 12) -> list[dict]:
+    pages = []
+    current = []
+    current_chars = 0
+    page_no = 1
+    for paragraph in paragraphs:
+        text_len = len(paragraph.get("text", ""))
+        should_break = current and (current_chars + text_len > max_chars or len(current) >= max_paragraphs)
+        if should_break:
+            pages.append(build_page(page_no, current))
+            page_no += 1
+            current = []
+            current_chars = 0
+        paragraph["pageNo"] = page_no
+        current.append(paragraph)
+        current_chars += text_len
+    if current:
+        pages.append(build_page(page_no, current))
+    return pages or [{"pageNo": 1, "paragraphIndexes": [], "text": ""}]
+
+
+def build_page(page_no: int, paragraphs: list[dict]) -> dict:
+    return {
+        "pageNo": page_no,
+        "paragraphIndexes": [paragraph["index"] for paragraph in paragraphs],
+        "text": "\n".join(paragraph["text"] for paragraph in paragraphs),
+    }
+
+
+def build_pages_from_page_texts(page_texts: list[str], paragraphs: list[dict]) -> list[dict]:
+    pages = []
+    for page_index, page_text in enumerate(page_texts):
+        page_no = page_index + 1
+        page_paragraphs = [paragraph for paragraph in paragraphs if paragraph.get("pageNo") == page_no]
+        pages.append(
+            {
+                "pageNo": page_no,
+                "paragraphIndexes": [paragraph["index"] for paragraph in page_paragraphs],
+                "text": "\n".join(paragraph["text"] for paragraph in page_paragraphs) or normalize_text(page_text),
+            }
+        )
+    return pages or [{"pageNo": 1, "paragraphIndexes": [], "text": ""}]

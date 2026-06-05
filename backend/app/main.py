@@ -98,17 +98,22 @@ async def research_review(files: list[UploadFile] = File(...)) -> dict:
         except Exception as error:
             raise HTTPException(status_code=502, detail=f"AI审核失败：{str(error)[:180]}") from error
         issues = format_issues + content_issues
+        attach_issue_locations(document, issues)
         document["diagnosis"] = diagnosis
         document["ai"] = ai_review_meta(ai_review)
         document["issueCounts"] = summarize_issues(issues)
         documents.append(document)
         all_issues.extend(issues)
 
-    summary = summarize_run(documents, all_issues)
+    issue_groups = group_issues(all_issues)
+    summary = summarize_run(documents, all_issues, issue_groups)
+    for document in documents:
+        document["issueGroupCount"] = sum(1 for group in issue_groups if group["documentId"] == document["id"])
     run = {
         "runId": run_id,
         "documents": documents,
         "issues": all_issues,
+        "issueGroups": issue_groups,
         "summary": summary,
         "processing": build_processing_trace(documents, all_issues),
         "standards": build_audit_standards(),
@@ -207,6 +212,101 @@ def summarize_issues(issues: list[dict]) -> dict:
         "content": sum(1 for item in issues if item["category"] == "content"),
         "benefit": sum(1 for item in issues if item["category"] == "benefit"),
     }
+
+
+def attach_issue_locations(document: dict, issues: list[dict]) -> None:
+    paragraph_by_index = {paragraph["index"]: paragraph for paragraph in document.get("paragraphs", [])}
+    for issue in issues:
+        paragraph = paragraph_by_index.get(issue.get("paragraphIndex")) or find_paragraph_by_issue_text(document, issue)
+        if paragraph and issue.get("paragraphIndex") is None:
+            issue["paragraphIndex"] = paragraph["index"]
+        page_no = paragraph.get("pageNo") if paragraph else 1
+        issue["pageNo"] = page_no
+        issue["pageLabel"] = f"第{page_no}页"
+        if paragraph:
+            issue["locationLabel"] = f"第{page_no}页 / 第{paragraph['index'] + 1}段"
+        else:
+            issue["locationLabel"] = f"第{page_no}页 / 全文"
+
+
+def find_paragraph_by_issue_text(document: dict, issue: dict) -> Optional[dict]:
+    candidates = [issue.get("excerpt", ""), issue.get("actual", "")]
+    needles = []
+    for candidate in candidates:
+        cleaned = re.sub(r"\s+", "", candidate or "")
+        if len(cleaned) >= 12:
+            needles.append(cleaned[:28])
+    if not needles:
+        return None
+    for paragraph in document.get("paragraphs", []):
+        haystack = re.sub(r"\s+", "", paragraph.get("text", ""))
+        if any(needle in haystack for needle in needles):
+            return paragraph
+    return None
+
+
+def group_issues(issues: list[dict]) -> list[dict]:
+    grouped: dict[tuple, dict] = {}
+    for issue in issues:
+        key = (issue["documentId"], issue["category"], issue["title"])
+        group = grouped.setdefault(
+            key,
+            {
+                "id": f"group-{issue['documentId']}-{issue['category']}-{abs(hash(issue['title'])) % 100000}",
+                "documentId": issue["documentId"],
+                "filename": issue["filename"],
+                "category": issue["category"],
+                "severity": issue["severity"],
+                "title": issue["title"],
+                "count": 0,
+                "pageNos": [],
+                "paragraphIndexes": [],
+                "expected": issue.get("expected", ""),
+                "suggestion": issue.get("suggestion", ""),
+                "source": issue.get("source", "rule"),
+                "aiModel": issue.get("aiModel", ""),
+                "samples": [],
+                "issueIds": [],
+            },
+        )
+        group["count"] += 1
+        group["severity"] = max_severity(group["severity"], issue["severity"])
+        if issue.get("pageNo") and issue["pageNo"] not in group["pageNos"]:
+            group["pageNos"].append(issue["pageNo"])
+        if issue.get("paragraphIndex") is not None:
+            group["paragraphIndexes"].append(issue["paragraphIndex"])
+        if len(group["samples"]) < 3:
+            group["samples"].append(
+                {
+                    "actual": issue.get("actual", ""),
+                    "suggestion": issue.get("suggestion", ""),
+                    "locationLabel": issue.get("locationLabel", ""),
+                }
+            )
+        group["issueIds"].append(issue["id"])
+
+    result = []
+    for group in grouped.values():
+        group["pageNos"].sort()
+        group["paragraphIndexes"] = sorted(set(group["paragraphIndexes"]))
+        group["pageLabel"] = format_page_range(group["pageNos"])
+        result.append(group)
+    severity_order = {"high": 0, "medium": 1, "low": 2}
+    category_order = {"format": 0, "structure": 1, "content": 2, "benefit": 3}
+    return sorted(result, key=lambda item: (severity_order.get(item["severity"], 9), category_order.get(item["category"], 9), item["title"]))
+
+
+def max_severity(current: str, incoming: str) -> str:
+    rank = {"low": 1, "medium": 2, "high": 3}
+    return incoming if rank.get(incoming, 0) > rank.get(current, 0) else current
+
+
+def format_page_range(page_nos: list[int]) -> str:
+    if not page_nos:
+        return "全文"
+    if len(page_nos) == 1:
+        return f"第{page_nos[0]}页"
+    return f"第{page_nos[0]}-{page_nos[-1]}页" if page_nos == list(range(page_nos[0], page_nos[-1] + 1)) else "、".join(f"第{page}页" for page in page_nos[:4])
 
 
 def normalize_ai_review(document: dict, ai_result: dict) -> tuple[list[dict], dict]:
@@ -309,15 +409,19 @@ def normalize_text(value) -> str:
     return str(value or "").strip()
 
 
-def summarize_run(documents: list[dict], issues: list[dict]) -> dict:
+def summarize_run(documents: list[dict], issues: list[dict], issue_groups: list[dict]) -> dict:
     scores = [doc["diagnosis"]["score"] for doc in documents] or [0]
     return {
         "documentCount": len(documents),
         "issueCount": len(issues),
+        "issueGroupCount": len(issue_groups),
         "averageScore": round(sum(scores) / len(scores)),
         "highCount": sum(1 for item in issues if item["severity"] == "high"),
         "mediumCount": sum(1 for item in issues if item["severity"] == "medium"),
         "lowCount": sum(1 for item in issues if item["severity"] == "low"),
+        "highGroupCount": sum(1 for item in issue_groups if item["severity"] == "high"),
+        "mediumGroupCount": sum(1 for item in issue_groups if item["severity"] == "medium"),
+        "lowGroupCount": sum(1 for item in issue_groups if item["severity"] == "low"),
         "formatCount": sum(1 for item in issues if item["category"] == "format"),
         "contentCount": sum(1 for item in issues if item["category"] in {"content", "structure"}),
         "benefitCount": sum(1 for item in issues if item["category"] == "benefit"),
@@ -329,6 +433,7 @@ def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[di
     has_format_metadata = sum(1 for doc in documents if doc.get("stats", {}).get("hasFormatMetadata"))
     format_issues = [issue for issue in issues if issue["category"] == "format"]
     ai_issues = [issue for issue in issues if issue.get("source") == "ai"]
+    issue_groups = group_issues(issues)
     return [
         {
             "id": "upload",
@@ -408,20 +513,20 @@ def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[di
             "id": "aggregate",
             "name": "问题归集定位",
             "status": "done",
-            "detail": f"已归集 {len(issues)} 项发现，并关联文件、问题类型、风险等级、原文段落和整改建议。",
+            "detail": f"已将 {len(issues)} 项发现归并为 {len(issue_groups)} 类问题，并关联文件、页码、段落范围和统一整改建议。",
             "outputs": [
-                {"label": "总问题", "value": len(issues)},
-                {"label": "高风险", "value": sum(1 for item in issues if item["severity"] == "high")},
-                {"label": "中风险", "value": sum(1 for item in issues if item["severity"] == "medium")},
-                {"label": "低风险", "value": sum(1 for item in issues if item["severity"] == "low")},
+                {"label": "问题类别", "value": len(issue_groups)},
+                {"label": "高风险类", "value": sum(1 for item in issue_groups if item["severity"] == "high")},
+                {"label": "中风险类", "value": sum(1 for item in issue_groups if item["severity"] == "medium")},
+                {"label": "低风险类", "value": sum(1 for item in issue_groups if item["severity"] == "low")},
             ],
             "items": [
                 {
-                    "title": issue["title"],
-                    "meta": f"{issue['filename']} · {issue['severity']} · {issue['category']}",
-                    "body": issue["suggestion"],
+                    "title": group["title"],
+                    "meta": f"{group['filename']} · {group['severity']} · {group['category']} · {group['pageLabel']} · {group['count']}处",
+                    "body": group["suggestion"],
                 }
-                for issue in issues[:8]
+                for group in issue_groups[:8]
             ],
         },
         {

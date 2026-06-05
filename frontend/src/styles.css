@@ -588,6 +588,51 @@ button {
   line-height: 1.65;
 }
 
+.page-toolbar {
+  border: 1px solid #d9e6ed;
+  background: #f8fbfc;
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.page-toolbar strong {
+  color: var(--blue-dark);
+}
+
+.page-toolbar div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 86px;
+  overflow: auto;
+}
+
+.page-button {
+  min-width: 34px;
+  min-height: 30px;
+  border: 1px solid #d9e6ed;
+  background: white;
+  color: var(--blue-dark);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.page-button.related {
+  background: #fff4e3;
+  border-color: #ecc891;
+  color: var(--amber);
+}
+
+.page-button.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+
 .paragraph-list,
 .issue-groups,
 .rewrite-box,
