@@ -43,7 +43,13 @@ docker build -t sipg-ai-document-review .
 docker run -p 8787:8787 --env-file .env sipg-ai-document-review
 ```
 
-镜像内置 LibreOffice，用于 `.doc` 转 `.docx`。线上平台使用 Dockerfile 构建，不要额外执行 `npm update -g npm`。
+默认镜像为 Zeabur 轻量构建，内置 `antiword`，`.doc` 文件执行文本级审核；`.docx` 文件支持完整格式审核。线上平台使用 Dockerfile 构建，不要额外执行 `npm update -g npm`。
+
+如需要在线上也执行 `.doc → .docx` 并做精细格式审核，可在 Docker 构建参数中设置：
+
+```bash
+INSTALL_LIBREOFFICE=true
+```
 
 ## API
 

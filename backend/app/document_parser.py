@@ -22,8 +22,8 @@ def parse_document(file_path: Path, original_name: str) -> dict:
             suffix = ".docx"
             warnings.append("已将 .doc 转换为 .docx 后进行格式审核。")
         else:
-            text = extract_text_with_textutil(file_path)
-            return build_text_document(original_name, ".doc", text, ["未能转换为 .docx，仅执行文本级内容审核。"])
+            text = extract_doc_text(file_path)
+            return build_text_document(original_name, ".doc", text, ["未能转换为 .docx，仅执行文本级内容审核；线上轻量镜像默认不安装 LibreOffice。"])
 
     if suffix == ".docx":
         parsed = parse_docx(working_path, original_name)
@@ -67,6 +67,17 @@ def extract_text_with_textutil(file_path: Path) -> str:
         return result.stdout.decode("utf-8", errors="ignore")
     except Exception:
         return ""
+
+
+def extract_doc_text(file_path: Path) -> str:
+    antiword = shutil.which("antiword")
+    if antiword:
+        try:
+            result = subprocess.run([antiword, str(file_path)], check=True, stdout=subprocess.PIPE, timeout=30)
+            return result.stdout.decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+    return extract_text_with_textutil(file_path)
 
 
 def parse_docx(file_path: Path, original_name: str) -> dict:

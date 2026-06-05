@@ -16,8 +16,13 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8787
 
+ARG INSTALL_LIBREOFFICE=false
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk \
+  && if [ "$INSTALL_LIBREOFFICE" = "true" ]; then \
+    apt-get install -y --no-install-recommends libreoffice-writer fonts-noto-cjk; \
+  else \
+    apt-get install -y --no-install-recommends antiword; \
+  fi \
   && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./backend/requirements.txt
