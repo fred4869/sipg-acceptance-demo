@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 
 const severityText = { high: '高风险', medium: '中风险', low: '低风险' }
 const categoryText = { format: '格式', structure: '结构', content: '内容', benefit: '效益' }
+const resultViews = [
+  { id: 'process', label: '处理过程' },
+  { id: 'findings', label: '问题发现' },
+  { id: 'analysis', label: '修改分析' }
+]
 
 export default function App() {
   const [files, setFiles] = useState([])
@@ -17,6 +22,7 @@ export default function App() {
   const [benefits, setBenefits] = useState({})
   const [benefitInputs, setBenefitInputs] = useState(defaultBenefitInputs)
   const [standards, setStandards] = useState(null)
+  const [activeView, setActiveView] = useState('process')
 
   useEffect(() => {
     fetch('/api/audit-standards')
@@ -53,6 +59,7 @@ export default function App() {
       setRun(null)
       setRewrites({})
       setBenefits({})
+      setActiveView('process')
       setLoadingStage('processing')
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
@@ -63,6 +70,7 @@ export default function App() {
       setActiveDocId(payload.documents?.[0]?.id || '')
       setActiveIssueId('')
       setActivePageNo(1)
+      setActiveView('findings')
     } catch (reviewError) {
       setError(reviewError.message)
     } finally {
@@ -166,7 +174,7 @@ export default function App() {
 
       {loadingStage && <Pipeline activeStage={loadingStage} />}
 
-      {auditStandards && (
+      {!run && auditStandards && (
         <AuditContext
           standards={auditStandards}
           processing={run?.processing}
@@ -178,45 +186,108 @@ export default function App() {
       {run && (
         <>
           <SummaryStrip run={run} />
-          <DocumentTabs
-            documents={run.documents}
-            activeDocId={activeDoc?.id}
-            onSelect={(id) => {
-              setActiveDocId(id)
-              setActiveIssueId('')
-              setActivePageNo(1)
-            }}
+          <ResultNavigation
+            activeView={activeView}
+            onChange={setActiveView}
+            run={run}
+            rewriteCount={Object.keys(rewrites).length}
+            benefitCount={Object.keys(benefits).length}
           />
-          <section className="workspace">
-            <DocumentPreview
-              document={activeDoc}
-              activeIssue={activeIssue}
-              activePageNo={previewPageNo}
-              onPageChange={setActivePageNo}
+          {activeView === 'process' && (
+            <AuditContext
+              standards={auditStandards}
+              processing={run.processing}
+              files={files}
+              loadingStage={loadingStage}
             />
-            <IssuePanel
-              groups={activeIssueGroups}
-              activeGroupId={activeIssue?.id}
-              onSelectGroup={(group) => {
-                setActiveIssueId(group.id)
-                setActivePageNo(group.pageNos?.[0] || 1)
-              }}
-            />
-            <OptimizationPanel
-              document={activeDoc}
-              rewrite={currentRewrite}
-              benefit={currentBenefit}
-              benefitInputs={benefitInputs}
-              rewriteLoading={rewriteLoading}
-              benefitLoading={benefitLoading}
-              onRewrite={generateRewrite}
-              onBenefit={generateBenefit}
-              onBenefitInputChange={setBenefitInputs}
-            />
-          </section>
+          )}
+          {activeView === 'findings' && (
+            <>
+              <DocumentTabs
+                documents={run.documents}
+                activeDocId={activeDoc?.id}
+                onSelect={(id) => {
+                  setActiveDocId(id)
+                  setActiveIssueId('')
+                  setActivePageNo(1)
+                }}
+              />
+              <section className="workspace findings-workspace">
+                <DocumentPreview
+                  document={activeDoc}
+                  activeIssue={activeIssue}
+                  activePageNo={previewPageNo}
+                  onPageChange={setActivePageNo}
+                />
+                <IssuePanel
+                  groups={activeIssueGroups}
+                  activeGroupId={activeIssue?.id}
+                  onSelectGroup={(group) => {
+                    setActiveIssueId(group.id)
+                    setActivePageNo(group.pageNos?.[0] || 1)
+                  }}
+                />
+              </section>
+            </>
+          )}
+          {activeView === 'analysis' && (
+            <>
+              <DocumentTabs
+                documents={run.documents}
+                activeDocId={activeDoc?.id}
+                onSelect={(id) => {
+                  setActiveDocId(id)
+                  setActiveIssueId('')
+                  setActivePageNo(1)
+                }}
+              />
+              <section className="workspace analysis-workspace">
+                <DocumentPreview
+                  document={activeDoc}
+                  activeIssue={activeIssue}
+                  activePageNo={previewPageNo}
+                  onPageChange={setActivePageNo}
+                />
+                <OptimizationPanel
+                  document={activeDoc}
+                  rewrite={currentRewrite}
+                  benefit={currentBenefit}
+                  benefitInputs={benefitInputs}
+                  rewriteLoading={rewriteLoading}
+                  benefitLoading={benefitLoading}
+                  onRewrite={generateRewrite}
+                  onBenefit={generateBenefit}
+                  onBenefitInputChange={setBenefitInputs}
+                />
+              </section>
+            </>
+          )}
         </>
       )}
     </main>
+  )
+}
+
+function ResultNavigation({ activeView, onChange, run, rewriteCount, benefitCount }) {
+  const values = {
+    process: `${run.processing?.length || 0}步`,
+    findings: `${run.summary.issueGroupCount ?? run.summary.issueCount}类`,
+    analysis: `${rewriteCount + benefitCount}项`
+  }
+  return (
+    <section className="result-navigation" aria-label="审核结果页面">
+      {resultViews.map((view) => (
+        <button
+          key={view.id}
+          type="button"
+          className={activeView === view.id ? 'result-nav-item active' : 'result-nav-item'}
+          onClick={() => onChange(view.id)}
+        >
+          <strong>{view.label}</strong>
+          <span>{values[view.id]}</span>
+        </button>
+      ))}
+    </section>
   )
 }
 

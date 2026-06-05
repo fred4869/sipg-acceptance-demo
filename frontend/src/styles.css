@@ -50,6 +50,7 @@ button {
 .pipeline,
 .audit-context,
 .summary-strip,
+.result-navigation,
 .document-tabs,
 .panel,
 .error-banner,
@@ -443,6 +444,46 @@ button {
   gap: 10px;
 }
 
+.result-navigation {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.result-nav-item {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 16px;
+  padding: 13px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.result-nav-item strong {
+  color: var(--blue-dark);
+  font-size: 17px;
+}
+
+.result-nav-item span {
+  border: 1px solid #d6e4eb;
+  background: white;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.result-nav-item.active {
+  border-color: rgba(20, 163, 189, 0.46);
+  background: #eaf6f8;
+  box-shadow: inset 0 -3px 0 var(--cyan);
+}
+
 .metric {
   min-height: 86px;
   border: 1px solid var(--line);
@@ -526,6 +567,14 @@ button {
   grid-template-columns: minmax(0, 1.05fr) 430px 470px;
   gap: 14px;
   align-items: start;
+}
+
+.findings-workspace {
+  grid-template-columns: minmax(0, 1fr) 500px;
+}
+
+.analysis-workspace {
+  grid-template-columns: minmax(0, 0.96fr) minmax(460px, 0.84fr);
 }
 
 .panel {
@@ -901,6 +950,7 @@ button {
   .workspace,
   .audit-context,
   .summary-strip,
+  .result-navigation,
   .document-tabs {
     grid-template-columns: 1fr;
   }
