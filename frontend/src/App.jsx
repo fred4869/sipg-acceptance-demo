@@ -42,6 +42,7 @@ export default function App() {
       return
     }
 
+    const stageTimers = []
     try {
       setError('')
       setRun(null)
@@ -52,19 +53,21 @@ export default function App() {
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
       setLoadingStage('parse')
+      stageTimers.push(setTimeout(() => setLoadingStage('format'), 1000))
+      stageTimers.push(setTimeout(() => setLoadingStage('audit'), 2200))
+      stageTimers.push(setTimeout(() => setLoadingStage('aggregate'), 5200))
       const response = await fetch('/api/research-review', { method: 'POST', body: formData })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.detail || payload.error || '审核失败')
-      setLoadingStage('audit')
-      await wait(260)
+      setLoadingStage('result')
+      await wait(180)
       setRun(payload)
       setActiveDocId(payload.documents?.[0]?.id || '')
       setActiveIssueId('')
-      setLoadingStage('result')
-      await wait(160)
     } catch (reviewError) {
       setError(reviewError.message)
     } finally {
+      stageTimers.forEach(clearTimeout)
       setLoadingStage('')
     }
   }
@@ -269,18 +272,25 @@ function buildPendingProcessing(files, loadingStage, standards) {
   const modelText = standards?.models?.contentReview ? `内容审核将调用 DashScope ${standards.models.contentReview}。` : '内容审核将调用已配置的大模型。'
   return [
     { name: '文件接收', status: files.length ? 'done' : 'pending', detail: fileText },
-    { name: '正文与格式解析', status: loadingStage === 'parse' ? 'active' : files.length ? 'pending' : 'pending', detail: 'Word 文件读取段落、标题、字体、字号、行距、缩进；PDF 执行文本级解析。' },
-    { name: '格式标准比对', status: loadingStage === 'audit' ? 'active' : 'pending', detail: '按上港科技报告正文格式逐段比对标题、正文、目录等样式。' },
-    { name: 'AI内容结构审核', status: loadingStage === 'audit' ? 'active' : 'pending', detail: modelText },
-    { name: '问题归集定位', status: loadingStage === 'result' ? 'active' : 'pending', detail: '输出问题类型、风险等级、原文定位、标准要求和整改建议。' },
+    { name: '正文与格式解析', status: loadingStage === 'parse' ? 'active' : completedStage(loadingStage, 'parse') ? 'done' : 'pending', detail: 'Word 文件读取段落、标题、字体、字号、行距、缩进；PDF 执行文本级解析。' },
+    { name: '格式标准比对', status: loadingStage === 'format' ? 'active' : completedStage(loadingStage, 'format') ? 'done' : 'pending', detail: '按上港科技报告正文格式逐段比对标题、正文、目录等样式。' },
+    { name: 'AI内容结构审核', status: loadingStage === 'audit' ? 'active' : completedStage(loadingStage, 'audit') ? 'done' : 'pending', detail: modelText },
+    { name: '问题归集定位', status: loadingStage === 'aggregate' || loadingStage === 'result' ? 'active' : 'pending', detail: '输出问题类型、风险等级、原文定位、标准要求和整改建议。' },
   ]
+}
+
+function completedStage(current, stage) {
+  const order = ['upload', 'parse', 'format', 'audit', 'aggregate', 'result']
+  return order.indexOf(current) > order.indexOf(stage)
 }
 
 function Pipeline({ activeStage }) {
   const steps = [
     ['upload', '读取文件'],
     ['parse', '解析格式与正文'],
+    ['format', '格式标准比对'],
     ['audit', 'AI内容审核'],
+    ['aggregate', '问题归集定位'],
     ['result', '生成结果']
   ]
   const activeIndex = steps.findIndex(([id]) => id === activeStage)
@@ -347,6 +357,16 @@ function DocumentPreview({ document, activeIssue }) {
         <h2>{document.title}</h2>
         <p>{document.filename} · {document.stats.paragraphCount} 段 · {document.stats.headingCount} 个标题</p>
       </div>
+      <div className="doc-meta-row">
+        {document.originalUrl && <a className="source-link" href={document.originalUrl} target="_blank" rel="noreferrer">查看/下载原文件</a>}
+        {document.capabilities?.map((item) => <span key={item}>{item}</span>)}
+      </div>
+      {document.diagnosis?.summary && (
+        <div className="doc-diagnosis">
+          <strong>AI诊断摘要</strong>
+          <p>{document.diagnosis.summary}</p>
+        </div>
+      )}
       {!!document.warnings?.length && (
         <div className="warning-box">
           {document.warnings.map((warning) => <span key={warning}>{warning}</span>)}

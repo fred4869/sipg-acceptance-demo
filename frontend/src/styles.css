@@ -204,7 +204,7 @@ button {
 .pipeline {
   padding: 14px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -463,6 +463,49 @@ button {
   display: grid;
   gap: 6px;
   margin-bottom: 12px;
+}
+
+.doc-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.doc-meta-row span,
+.source-link {
+  border: 1px solid #d9e6ed;
+  background: #f6fafb;
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.source-link {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+}
+
+.doc-diagnosis {
+  border: 1px solid #d9e6ed;
+  background: #f7fbfc;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.doc-diagnosis strong {
+  color: var(--blue-dark);
+}
+
+.doc-diagnosis p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
 }
 
 .paragraph-list,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 import re
 import uuid
 from pathlib import Path
@@ -87,6 +88,9 @@ async def research_review(files: list[UploadFile] = File(...)) -> dict:
         target = run_dir / safe_name
         target.write_bytes(await upload.read())
         document = parse_document(target, safe_name)
+        document["sourcePath"] = str(target)
+        document["originalUrl"] = f"/api/research-runs/{run_id}/documents/{document['id']}/original"
+        document["capabilities"] = build_document_capabilities(document)
         format_issues = audit_format(document)
         try:
             ai_review = await generate_ai_review(document, format_issues)
@@ -163,6 +167,17 @@ def download_rewrite(run_id: str, document_id: str) -> FileResponse:
     if not path.exists():
         raise HTTPException(status_code=404, detail="尚未生成优化稿。")
     return FileResponse(path, filename="上港研究报告优化稿.docx", media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
+
+@app.get("/api/research-runs/{run_id}/documents/{document_id}/original")
+def download_original(run_id: str, document_id: str) -> FileResponse:
+    run = get_run(run_id)
+    document = get_document(run, document_id)
+    path = Path(document.get("sourcePath", ""))
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="原文件不存在或已过期。")
+    media_type = mimetypes.guess_type(document["filename"])[0] or "application/octet-stream"
+    return FileResponse(path, filename=document["filename"], media_type=media_type)
 
 
 def get_run(run_id: str) -> dict:
@@ -257,6 +272,14 @@ def ai_review_meta(ai_result: dict) -> dict:
     }
 
 
+def build_document_capabilities(document: dict) -> list[str]:
+    if document["stats"].get("hasFormatMetadata"):
+        return ["Word精细格式审核", "正文结构解析", "AI内容结构审核", "原文件查看/下载"]
+    if document.get("fileType") == "pdf":
+        return ["PDF文本级解析", "AI内容结构审核", "原文件查看/下载"]
+    return ["文本级解析", "AI内容结构审核", "原文件查看/下载"]
+
+
 def normalize_score(value) -> int:
     try:
         return max(0, min(100, round(float(value))))
@@ -313,7 +336,7 @@ def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[di
         {
             "name": "正文与格式解析",
             "status": "done",
-            "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析。",
+            "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析；其他文件执行文本级解析。",
         },
         {
             "name": "格式标准比对",
@@ -386,6 +409,7 @@ def sanitize_run(run: dict) -> dict:
     cloned = json.loads(json.dumps(run, ensure_ascii=False))
     for document in cloned["documents"]:
         document.pop("text", None)
+        document.pop("sourcePath", None)
         document["paragraphs"] = document["paragraphs"][:240]
     return cloned
 
