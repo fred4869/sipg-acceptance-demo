@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix frontend\"",
+    "dev": "concurrently \"python3 -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8787\" \"npm run dev --prefix frontend\"",
     "build": "vite build --config frontend/vite.config.js",
-    "start": "npm run start --prefix server"
+    "start": "python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8787}"
   },
   "dependencies": {
     "cors": "^2.8.5",

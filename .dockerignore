@@ -5,4 +5,8 @@ node_modules
 frontend/node_modules
 server/node_modules
 frontend/dist
+backend/runtime
+__pycache__
+*.pyc
+.venv
 npm-debug.log*
