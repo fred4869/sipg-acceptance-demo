@@ -42,32 +42,23 @@ export default function App() {
       return
     }
 
-    const stageTimers = []
     try {
       setError('')
       setRun(null)
       setRewrites({})
       setBenefits({})
-      setLoadingStage('upload')
-      await wait(220)
+      setLoadingStage('processing')
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
-      setLoadingStage('parse')
-      stageTimers.push(setTimeout(() => setLoadingStage('format'), 1000))
-      stageTimers.push(setTimeout(() => setLoadingStage('audit'), 2200))
-      stageTimers.push(setTimeout(() => setLoadingStage('aggregate'), 5200))
       const response = await fetch('/api/research-review', { method: 'POST', body: formData })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.detail || payload.error || '审核失败')
-      setLoadingStage('result')
-      await wait(180)
       setRun(payload)
       setActiveDocId(payload.documents?.[0]?.id || '')
       setActiveIssueId('')
     } catch (reviewError) {
       setError(reviewError.message)
     } finally {
-      stageTimers.forEach(clearTimeout)
       setLoadingStage('')
     }
   }
@@ -211,6 +202,13 @@ export default function App() {
 
 function AuditContext({ standards, processing, files, loadingStage }) {
   const steps = processing || buildPendingProcessing(files, loadingStage, standards)
+  const [activeStepId, setActiveStepId] = useState(steps[0]?.id || steps[0]?.name || '')
+  useEffect(() => {
+    if (!steps.some((step) => (step.id || step.name) === activeStepId)) {
+      setActiveStepId(steps[0]?.id || steps[0]?.name || '')
+    }
+  }, [steps, activeStepId])
+  const activeStep = steps.find((step) => (step.id || step.name) === activeStepId) || steps[0]
   return (
     <section className="audit-context">
       <div className="context-card process-card">
@@ -220,19 +218,51 @@ function AuditContext({ standards, processing, files, loadingStage }) {
         </div>
         <div className="process-list">
           {steps.map((step, index) => (
-            <div key={`${step.name}-${index}`} className={`process-row ${step.status || ''}`}>
+            <button
+              key={`${step.name}-${index}`}
+              type="button"
+              className={`process-row ${step.status || ''} ${(step.id || step.name) === (activeStep?.id || activeStep?.name) ? 'selected' : ''}`}
+              onClick={() => setActiveStepId(step.id || step.name)}
+            >
               <span>{index + 1}</span>
               <div>
                 <strong>{step.name}</strong>
                 <p>{step.detail}</p>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
       <div className="context-card standard-card">
         <div className="context-title">
+          <span className="section-label">步骤产出</span>
+          <h2>{activeStep?.name || '处理结果'}</h2>
+          <p>{activeStep?.detail}</p>
+        </div>
+        {!!activeStep?.outputs?.length && (
+          <div className="step-output-grid">
+            {activeStep.outputs.map((item) => (
+              <div key={item.label} className="step-output">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+        {!!activeStep?.items?.length && (
+          <div className="step-item-list">
+            {activeStep.items.map((item, index) => (
+              <article key={`${item.title}-${index}`} className="step-item">
+                <strong>{item.title}</strong>
+                {item.meta && <span>{item.meta}</span>}
+                {item.body && <p>{item.body}</p>}
+              </article>
+            ))}
+          </div>
+        )}
+
+        <div className="context-title standard-title">
           <span className="section-label">审核依据</span>
           <h2>规则标准与模型</h2>
         </div>
@@ -270,36 +300,26 @@ function AuditContext({ standards, processing, files, loadingStage }) {
 function buildPendingProcessing(files, loadingStage, standards) {
   const fileText = files.length ? `已选择 ${files.length} 个待审核文件。` : '等待选择 Word 或 PDF 文件。'
   const modelText = standards?.models?.contentReview ? `内容审核将调用 DashScope ${standards.models.contentReview}。` : '内容审核将调用已配置的大模型。'
+  const isProcessing = loadingStage === 'processing'
   return [
-    { name: '文件接收', status: files.length ? 'done' : 'pending', detail: fileText },
-    { name: '正文与格式解析', status: loadingStage === 'parse' ? 'active' : completedStage(loadingStage, 'parse') ? 'done' : 'pending', detail: 'Word 文件读取段落、标题、字体、字号、行距、缩进；PDF 执行文本级解析。' },
-    { name: '格式标准比对', status: loadingStage === 'format' ? 'active' : completedStage(loadingStage, 'format') ? 'done' : 'pending', detail: '按上港科技报告正文格式逐段比对标题、正文、目录等样式。' },
-    { name: 'AI内容结构审核', status: loadingStage === 'audit' ? 'active' : completedStage(loadingStage, 'audit') ? 'done' : 'pending', detail: modelText },
-    { name: '问题归集定位', status: loadingStage === 'aggregate' || loadingStage === 'result' ? 'active' : 'pending', detail: '输出问题类型、风险等级、原文定位、标准要求和整改建议。' },
+    { id: 'upload', name: '文件接收', status: files.length ? 'done' : 'pending', detail: fileText, outputs: [{ label: '已选文件', value: files.length }], items: files.map((file) => ({ title: file.name, meta: `${Math.round(file.size / 1024)} KB`, body: '等待提交审核。' })) },
+    { id: 'parse', name: '正文与格式解析', status: isProcessing ? 'active' : 'pending', detail: 'Word 文件读取段落、标题、字体、字号、行距、缩进；PDF 执行文本级解析。', outputs: [{ label: '状态', value: isProcessing ? '处理中' : '待开始' }] },
+    { id: 'format', name: '格式标准比对', status: isProcessing ? 'active' : 'pending', detail: '按上港科技报告正文格式逐段比对标题、正文、目录等样式。', outputs: [{ label: '状态', value: isProcessing ? '排队/处理中' : '待开始' }] },
+    { id: 'audit', name: 'AI内容结构审核', status: isProcessing ? 'active' : 'pending', detail: modelText, outputs: [{ label: '模型', value: standards?.models?.contentReview || '-' }, { label: '状态', value: isProcessing ? '等待AI返回' : '待开始' }] },
+    { id: 'aggregate', name: '问题归集定位', status: isProcessing ? 'active' : 'pending', detail: '输出问题类型、风险等级、原文定位、标准要求和整改建议。', outputs: [{ label: '状态', value: isProcessing ? '等待审核完成' : '待开始' }] },
+    { id: 'result', name: '结果生成', status: isProcessing ? 'active' : 'pending', detail: '审核完成后展示每一步真实产出。', outputs: [{ label: '状态', value: isProcessing ? '等待结果' : '待开始' }] },
   ]
-}
-
-function completedStage(current, stage) {
-  const order = ['upload', 'parse', 'format', 'audit', 'aggregate', 'result']
-  return order.indexOf(current) > order.indexOf(stage)
 }
 
 function Pipeline({ activeStage }) {
-  const steps = [
-    ['upload', '读取文件'],
-    ['parse', '解析格式与正文'],
-    ['format', '格式标准比对'],
-    ['audit', 'AI内容审核'],
-    ['aggregate', '问题归集定位'],
-    ['result', '生成结果']
-  ]
-  const activeIndex = steps.findIndex(([id]) => id === activeStage)
+  const steps = [['processing', '处理中']]
   return (
     <section className="pipeline">
       {steps.map(([id, label], index) => (
-        <div key={id} className={`pipeline-step ${index < activeIndex ? 'done' : ''} ${id === activeStage ? 'active' : ''}`}>
+        <div key={id} className={`pipeline-step ${id === activeStage ? 'active' : ''}`}>
           <span>{index + 1}</span>
           <strong>{label}</strong>
+          <p>正在解析文件、比对格式标准并调用 AI 审核。当前接口完成后会展示每一步真实产出。</p>
         </div>
       ))}
     </section>

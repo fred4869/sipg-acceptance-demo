@@ -327,33 +327,134 @@ def summarize_run(documents: list[dict], issues: list[dict]) -> dict:
 def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[dict]:
     file_types = sorted({doc.get("fileType", "unknown") for doc in documents})
     has_format_metadata = sum(1 for doc in documents if doc.get("stats", {}).get("hasFormatMetadata"))
+    format_issues = [issue for issue in issues if issue["category"] == "format"]
+    ai_issues = [issue for issue in issues if issue.get("source") == "ai"]
     return [
         {
+            "id": "upload",
             "name": "文件接收",
             "status": "done",
             "detail": f"已接收 {len(documents)} 个文件，类型：{', '.join(file_types) or '-'}。",
+            "outputs": [
+                {"label": "文件数量", "value": len(documents)},
+                {"label": "文件类型", "value": "、".join(file_types) or "-"},
+            ],
+            "items": [
+                {
+                    "title": doc["filename"],
+                    "meta": f"{doc.get('fileType', '-').upper()} · {doc.get('stats', {}).get('paragraphCount', 0)}段",
+                    "body": "、".join(doc.get("capabilities", [])),
+                }
+                for doc in documents
+            ],
         },
         {
+            "id": "parse",
             "name": "正文与格式解析",
             "status": "done",
             "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析；其他文件执行文本级解析。",
+            "outputs": [
+                {"label": "精细格式文件", "value": has_format_metadata},
+                {"label": "总段落数", "value": sum(doc.get("stats", {}).get("paragraphCount", 0) for doc in documents)},
+                {"label": "总标题数", "value": sum(doc.get("stats", {}).get("headingCount", 0) for doc in documents)},
+            ],
+            "items": [
+                {
+                    "title": doc["filename"],
+                    "meta": "可做精细格式审核" if doc.get("stats", {}).get("hasFormatMetadata") else "文本级审核",
+                    "body": f"解析段落 {doc.get('stats', {}).get('paragraphCount', 0)} 个，标题 {doc.get('stats', {}).get('headingCount', 0)} 个，图题 {doc.get('stats', {}).get('figureCount', 0)} 个，表题 {doc.get('stats', {}).get('tableTitleCount', 0)} 个。",
+                }
+                for doc in documents
+            ],
         },
         {
+            "id": "format",
             "name": "格式标准比对",
             "status": "done",
             "detail": "按上港科技报告正文格式，对一级标题、二级标题、正文、目录和图表清单进行逐段比对。",
+            "outputs": [
+                {"label": "格式问题", "value": len(format_issues)},
+                {"label": "覆盖标准", "value": "一级标题、二级标题、三级/四级标题、正文、目录"},
+            ],
+            "items": [
+                {
+                    "title": doc["filename"],
+                    "meta": f"{count_doc_issues(format_issues, doc['id'])}项格式发现",
+                    "body": first_issue_text(format_issues, doc["id"]) or "未发现典型格式偏差。",
+                }
+                for doc in documents
+            ],
         },
         {
+            "id": "audit",
             "name": "AI内容结构审核",
             "status": "done",
             "detail": f"调用 DashScope {DASHSCOPE_MODEL}，审核研究报告体例、偏题类型、研究方法、验证数据和效益分析完整性。",
+            "outputs": [
+                {"label": "审核模型", "value": DASHSCOPE_MODEL},
+                {"label": "AI问题", "value": len(ai_issues)},
+                {"label": "审核维度", "value": "体例偏题、研究方法、验证数据、效益分析、结论闭环"},
+            ],
+            "items": [
+                {
+                    "title": doc["filename"],
+                    "meta": f"{doc.get('diagnosis', {}).get('score', '-')}分 · {doc.get('diagnosis', {}).get('reportType', '-')}",
+                    "body": doc.get("diagnosis", {}).get("summary", ""),
+                }
+                for doc in documents
+            ],
         },
         {
+            "id": "aggregate",
             "name": "问题归集定位",
             "status": "done",
             "detail": f"已归集 {len(issues)} 项发现，并关联文件、问题类型、风险等级、原文段落和整改建议。",
+            "outputs": [
+                {"label": "总问题", "value": len(issues)},
+                {"label": "高风险", "value": sum(1 for item in issues if item["severity"] == "high")},
+                {"label": "中风险", "value": sum(1 for item in issues if item["severity"] == "medium")},
+                {"label": "低风险", "value": sum(1 for item in issues if item["severity"] == "low")},
+            ],
+            "items": [
+                {
+                    "title": issue["title"],
+                    "meta": f"{issue['filename']} · {issue['severity']} · {issue['category']}",
+                    "body": issue["suggestion"],
+                }
+                for issue in issues[:8]
+            ],
+        },
+        {
+            "id": "result",
+            "name": "结果生成",
+            "status": "done",
+            "detail": "生成文件级评分、报告类型、问题清单、原文定位、整改建议，并为后续优化稿和效益分析提供输入。",
+            "outputs": [
+                {"label": "平均评分", "value": round(sum(doc["diagnosis"]["score"] for doc in documents) / len(documents)) if documents else 0},
+                {"label": "可生成优化稿", "value": len(documents)},
+                {"label": "可生成效益分析", "value": len(documents)},
+            ],
+            "items": [
+                {
+                    "title": doc["filename"],
+                    "meta": f"{doc.get('diagnosis', {}).get('rewriteMode', '-')} · {doc.get('issueCounts', {}).get('total', 0)}项问题",
+                    "body": "可继续生成研究报告优化稿；如需效益分析，可补充作业量、效率、成本、能耗、安全环保等数据。",
+                }
+                for doc in documents
+            ],
         },
     ]
+
+
+def count_doc_issues(issues: list[dict], document_id: str) -> int:
+    return sum(1 for issue in issues if issue["documentId"] == document_id)
+
+
+def first_issue_text(issues: list[dict], document_id: str) -> str:
+    for issue in issues:
+        if issue["documentId"] == document_id:
+            return f"{issue['title']}：{issue['actual']}"
+    return ""
 
 
 def build_audit_standards() -> dict:

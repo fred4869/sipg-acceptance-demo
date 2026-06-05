@@ -204,7 +204,7 @@ button {
 .pipeline {
   padding: 14px;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -266,6 +266,7 @@ button {
 }
 
 .process-row {
+  width: 100%;
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr);
   gap: 10px;
@@ -274,6 +275,8 @@ button {
   border-radius: 14px;
   padding: 10px;
   background: white;
+  color: var(--ink);
+  text-align: left;
 }
 
 .process-row > span {
@@ -298,6 +301,11 @@ button {
   background: #eef9fb;
 }
 
+.process-row.selected {
+  border-color: rgba(7, 95, 145, 0.58);
+  box-shadow: inset 4px 0 0 var(--blue);
+}
+
 .process-row.active > span {
   background: var(--cyan);
   color: white;
@@ -313,6 +321,78 @@ button {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.55;
+}
+
+.context-title p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.step-output-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.step-output {
+  border: 1px solid #dde8ee;
+  background: white;
+  border-radius: 14px;
+  padding: 11px;
+  display: grid;
+  gap: 6px;
+}
+
+.step-output span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.step-output strong {
+  color: var(--blue-dark);
+  font-size: 18px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.step-item-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.step-item {
+  border: 1px solid #dde8ee;
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.step-item strong {
+  color: var(--blue-dark);
+  overflow-wrap: anywhere;
+}
+
+.step-item span,
+.step-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.standard-title {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
 }
 
 .standard-grid {
@@ -781,6 +861,10 @@ button {
   }
 
   .standard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-output-grid {
     grid-template-columns: 1fr;
   }
 
