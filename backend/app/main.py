@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .ai_service import dashscope_configured, generate_ai_benefit, generate_ai_review, generate_ai_rewrite
-from .config import DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL, FRONTEND_DIST_DIR, OUTPUT_DIR, UPLOAD_DIR, ensure_runtime_dirs
+from .config import DASHSCOPE_BENEFIT_MODEL, DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL, FRONTEND_DIST_DIR, OUTPUT_DIR, UPLOAD_DIR, ensure_runtime_dirs
 from .docx_exporter import export_rewrite_docx
 from .document_parser import parse_document
 from .format_auditor import audit_format
@@ -61,7 +61,7 @@ def health() -> dict:
         "models": {
             "review": DASHSCOPE_MODEL,
             "rewrite": DASHSCOPE_REWRITE_MODEL,
-            "benefit": DASHSCOPE_REWRITE_MODEL,
+            "benefit": DASHSCOPE_BENEFIT_MODEL,
         },
     }
 
@@ -343,7 +343,7 @@ def build_audit_standards() -> dict:
         "models": {
             "contentReview": DASHSCOPE_MODEL,
             "rewrite": DASHSCOPE_REWRITE_MODEL,
-            "benefit": DASHSCOPE_REWRITE_MODEL,
+            "benefit": DASHSCOPE_BENEFIT_MODEL,
         },
         "formatRules": [
             {

@@ -14,8 +14,9 @@ FRONTEND_DIST_DIR = ROOT_DIR / "frontend" / "dist"
 
 DASHSCOPE_BASE_URL = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
-DASHSCOPE_MODEL = os.getenv("DASHSCOPE_MODEL", "qwen3.6-plus")
+DASHSCOPE_MODEL = os.getenv("DASHSCOPE_MODEL", "qwen3.6-flash")
 DASHSCOPE_REWRITE_MODEL = os.getenv("DASHSCOPE_REWRITE_MODEL", "qwen3.7-max")
+DASHSCOPE_BENEFIT_MODEL = os.getenv("DASHSCOPE_BENEFIT_MODEL", "qwen3.6-plus")
 
 
 def ensure_runtime_dirs() -> None:

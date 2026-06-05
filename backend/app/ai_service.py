@@ -5,7 +5,7 @@ import re
 import httpx
 from typing import Optional
 
-from .config import DASHSCOPE_API_KEY, DASHSCOPE_BASE_URL, DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL
+from .config import DASHSCOPE_API_KEY, DASHSCOPE_BASE_URL, DASHSCOPE_BENEFIT_MODEL, DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL
 
 
 def dashscope_configured() -> bool:
@@ -83,6 +83,8 @@ async def generate_ai_review(document: dict, format_issues: list[dict]) -> dict:
                     "issues:[{category:string,severity:string,title:string,paragraphIndex:number|null,excerpt:string,expected:string,actual:string,suggestion:string}]。"
                     "category只能是structure/content/benefit，severity只能是high/medium/low。"
                     "rewriteMode只能是restructure或polish。文件严重偏题时score应低于60；基本合格但需优化时score约70。"
+                    "reportType只能从以下中文枚举中选择：严重偏题：专利说明书拼接、严重偏题：软件系统/操作说明书、"
+                    "基本合格：研究深度待增强、需优化：研究报告体例不稳定。"
                     f"\n输入：{json.dumps(prompt, ensure_ascii=False)}"
                 ),
             },
@@ -141,7 +143,7 @@ async def generate_ai_benefit(payload: dict, document: Optional[dict] = None) ->
             {"role": "system", "content": "你是科技项目验收效益分析撰写助手。所有效益结论必须有数据、公式、假设或明确标注需人工确认；表达要客观审慎但体现项目价值。"},
             {"role": "user", "content": f"请生成效益分析，包含经济效益、运营效益、安全/环保效益、推广价值、计算口径、需补充数据。\n项目材料摘要：{(document or {}).get('title','')}\n输入数据：{payload}"},
         ],
-        model=DASHSCOPE_REWRITE_MODEL,
+        model=DASHSCOPE_BENEFIT_MODEL,
         temperature=0.2,
     )
     if not result["content"]:

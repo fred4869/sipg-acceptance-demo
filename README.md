@@ -30,11 +30,12 @@ npm run dev
 ```bash
 DASHSCOPE_API_KEY=your_dashscope_api_key
 DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-DASHSCOPE_MODEL=qwen3.6-plus
+DASHSCOPE_MODEL=qwen3.6-flash
 DASHSCOPE_REWRITE_MODEL=qwen3.7-max
+DASHSCOPE_BENEFIT_MODEL=qwen3.6-plus
 ```
 
-普通审核默认用 `DASHSCOPE_MODEL=qwen3.6-plus`，研究报告重构和效益分析默认用 `DASHSCOPE_REWRITE_MODEL=qwen3.7-max`。如果账号权限或地域不支持对应模型，需要改成当前账号可调用的模型名。
+普通审核默认用 `DASHSCOPE_MODEL=qwen3.6-flash`，保证现场上传多文件时响应速度；研究报告重构默认用 `DASHSCOPE_REWRITE_MODEL=qwen3.7-max`，因为复杂偏题材料需要更强的长文重构能力；效益分析默认用 `DASHSCOPE_BENEFIT_MODEL=qwen3.6-plus`，本地验证已能稳定生成公式、假设和需确认项。如果账号权限或地域不支持对应模型，需要改成当前账号可调用的模型名。
 
 ## Docker 部署
 
