@@ -17,6 +17,7 @@ from .config import DASHSCOPE_MODEL, DASHSCOPE_REWRITE_MODEL, FRONTEND_DIST_DIR,
 from .docx_exporter import export_rewrite_docx
 from .document_parser import parse_document
 from .format_auditor import audit_format
+from .rules import SIPG_FORMAT_RULES
 from .rewriter import build_ai_rewrite
 
 
@@ -65,6 +66,11 @@ def health() -> dict:
     }
 
 
+@app.get("/api/audit-standards")
+def audit_standards() -> dict:
+    return build_audit_standards()
+
+
 @app.post("/api/research-review")
 async def research_review(files: list[UploadFile] = File(...)) -> dict:
     if not files:
@@ -95,7 +101,16 @@ async def research_review(files: list[UploadFile] = File(...)) -> dict:
         all_issues.extend(issues)
 
     summary = summarize_run(documents, all_issues)
-    run = {"runId": run_id, "documents": documents, "issues": all_issues, "summary": summary, "rewrites": {}, "benefits": {}}
+    run = {
+        "runId": run_id,
+        "documents": documents,
+        "issues": all_issues,
+        "summary": summary,
+        "processing": build_processing_trace(documents, all_issues),
+        "standards": build_audit_standards(),
+        "rewrites": {},
+        "benefits": {},
+    }
     RUNS[run_id] = run
     return sanitize_run(run)
 
@@ -284,6 +299,86 @@ def summarize_run(documents: list[dict], issues: list[dict]) -> dict:
         "contentCount": sum(1 for item in issues if item["category"] in {"content", "structure"}),
         "benefitCount": sum(1 for item in issues if item["category"] == "benefit"),
     }
+
+
+def build_processing_trace(documents: list[dict], issues: list[dict]) -> list[dict]:
+    file_types = sorted({doc.get("fileType", "unknown") for doc in documents})
+    has_format_metadata = sum(1 for doc in documents if doc.get("stats", {}).get("hasFormatMetadata"))
+    return [
+        {
+            "name": "文件接收",
+            "status": "done",
+            "detail": f"已接收 {len(documents)} 个文件，类型：{', '.join(file_types) or '-'}。",
+        },
+        {
+            "name": "正文与格式解析",
+            "status": "done",
+            "detail": f"{has_format_metadata} 个 Word 文件完成段落、标题、字体、字号、行距、缩进等格式元数据解析。",
+        },
+        {
+            "name": "格式标准比对",
+            "status": "done",
+            "detail": "按上港科技报告正文格式，对一级标题、二级标题、正文、目录和图表清单进行逐段比对。",
+        },
+        {
+            "name": "AI内容结构审核",
+            "status": "done",
+            "detail": f"调用 DashScope {DASHSCOPE_MODEL}，审核研究报告体例、偏题类型、研究方法、验证数据和效益分析完整性。",
+        },
+        {
+            "name": "问题归集定位",
+            "status": "done",
+            "detail": f"已归集 {len(issues)} 项发现，并关联文件、问题类型、风险等级、原文段落和整改建议。",
+        },
+    ]
+
+
+def build_audit_standards() -> dict:
+    return {
+        "basis": [
+            "上港集团科技创新项目验收材料封面及清单要求",
+            "上港科技报告正文格式要求",
+            "科技项目研究报告常见结构：引言、研究目标、技术路线、实施验证、成果、效益分析、结论、参考文献",
+        ],
+        "models": {
+            "contentReview": DASHSCOPE_MODEL,
+            "rewrite": DASHSCOPE_REWRITE_MODEL,
+            "benefit": DASHSCOPE_REWRITE_MODEL,
+        },
+        "formatRules": [
+            {
+                "name": rule["label"],
+                "standard": describe_format_rule(rule),
+            }
+            for rule in SIPG_FORMAT_RULES.values()
+        ],
+        "contentRules": [
+            "识别是否偏成专利说明书、软件系统说明书、操作手册或产品介绍。",
+            "检查是否具备研究问题、技术路线、研究方法、现场验证数据和结论闭环。",
+            "检查功能描述是否被转化为研究性表达，而不是菜单、按钮、部署步骤堆砌。",
+            "检查效益分析是否包含数据来源、计算口径、公式、假设和需补充数据。",
+        ],
+        "outputFields": [
+            "问题类型、风险等级、定位段落、实际问题、标准要求、整改建议",
+            "综合评分、报告类型、优化模式、AI诊断摘要",
+            "优化大纲、示例改写、需补充数据、Word优化稿",
+        ],
+    }
+
+
+def describe_format_rule(rule: dict) -> str:
+    parts = [
+        f"{rule.get('font')} {rule.get('size_pt')}pt",
+        "加粗" if rule.get("bold") else "不加粗",
+        f"段前{rule.get('space_before_pt')}磅",
+        f"段后{rule.get('space_after_pt')}磅",
+        f"{rule.get('line_spacing')}倍行距",
+    ]
+    if rule.get("first_line_indent_pt"):
+        parts.append("首行缩进2字符")
+    if rule.get("alignment"):
+        parts.append("两端对齐")
+    return "，".join(parts)
 
 
 def sanitize_run(run: dict) -> dict:

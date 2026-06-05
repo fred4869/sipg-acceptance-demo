@@ -48,6 +48,7 @@ button {
 .hero,
 .upload-panel,
 .pipeline,
+.audit-context,
 .summary-strip,
 .document-tabs,
 .panel,
@@ -235,6 +236,124 @@ button {
 .pipeline-step.done span {
   background: var(--green);
   color: white;
+}
+
+.audit-context {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 0.86fr 1.14fr;
+  gap: 12px;
+}
+
+.context-card {
+  border: 1px solid var(--line);
+  background: #f9fbfc;
+  border-radius: 18px;
+  padding: 14px;
+  min-width: 0;
+}
+
+.context-title h2 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.process-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.process-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #dde8ee;
+  border-radius: 14px;
+  padding: 10px;
+  background: white;
+}
+
+.process-row > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #edf4f7;
+  color: var(--blue-dark);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.process-row.done > span {
+  background: var(--green);
+  color: white;
+}
+
+.process-row.active {
+  border-color: rgba(20, 163, 189, 0.58);
+  background: #eef9fb;
+}
+
+.process-row.active > span {
+  background: var(--cyan);
+  color: white;
+}
+
+.process-row strong,
+.standard-block strong {
+  color: var(--blue-dark);
+}
+
+.process-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.standard-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.standard-block {
+  border: 1px solid #dde8ee;
+  background: white;
+  border-radius: 14px;
+  padding: 11px;
+  display: grid;
+  gap: 7px;
+}
+
+.standard-block.wide {
+  grid-column: 1 / -1;
+}
+
+.standard-block span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rule-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rule-chips span {
+  border: 1px solid #d9e6ed;
+  background: #f6fafb;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--blue-dark);
+  font-size: 12px;
 }
 
 .summary-strip {
@@ -456,6 +575,21 @@ button {
   line-height: 1.5;
 }
 
+.issue-card b {
+  color: var(--blue-dark);
+}
+
+.issue-source {
+  width: fit-content;
+  border: 1px solid rgba(7, 95, 145, 0.18);
+  background: #eef7fa;
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .severity {
   border-radius: 999px;
   padding: 4px 8px;
@@ -597,8 +731,13 @@ button {
   .hero,
   .upload-panel,
   .workspace,
+  .audit-context,
   .summary-strip,
   .document-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .standard-grid {
     grid-template-columns: 1fr;
   }
 
