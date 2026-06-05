@@ -192,7 +192,7 @@ function Pipeline({ activeStage }) {
   const steps = [
     ['upload', '读取文件'],
     ['parse', '解析格式与正文'],
-    ['audit', '规则与AI审核'],
+    ['audit', 'AI内容审核'],
     ['result', '生成结果']
   ]
   const activeIndex = steps.findIndex(([id]) => id === activeStage)
@@ -242,6 +242,7 @@ function DocumentTabs({ documents, activeDocId, onSelect }) {
         >
           <strong>{document.filename}</strong>
           <span>{document.diagnosis.reportType} · {document.diagnosis.score}分 · {document.issueCounts.total}项</span>
+          {document.ai?.enabled && <em>{document.ai.provider} · {document.ai.model}</em>}
         </button>
       ))}
     </section>
@@ -341,6 +342,8 @@ function OptimizationPanel({
       </button>
       {rewrite ? (
         <div className="rewrite-box">
+          <AiBadge ai={rewrite.ai} />
+          {rewrite.summary && <p className="ai-summary">{rewrite.summary}</p>}
           <h3>推荐目录</h3>
           <ol>
             {rewrite.outline?.map((item) => <li key={item}>{item}</li>)}
@@ -352,6 +355,14 @@ function OptimizationPanel({
               <p>{section.after}</p>
             </article>
           ))}
+          {!!rewrite.dataNeeded?.length && (
+            <>
+              <h3>需补充数据</h3>
+              <ul className="data-needed">
+                {rewrite.dataNeeded.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </>
+          )}
           {rewrite.downloadUrl && <a className="download-link" href={rewrite.downloadUrl}>下载Word优化稿</a>}
         </div>
       ) : (
@@ -374,9 +385,19 @@ function OptimizationPanel({
           {benefitLoading ? '生成中...' : '生成效益分析'}
         </button>
       </div>
-      {benefit && <pre className="benefit-output">{benefit.content}</pre>}
+      {benefit && (
+        <div className="benefit-result">
+          <AiBadge ai={benefit.ai} />
+          <pre className="benefit-output">{benefit.content}</pre>
+        </div>
+      )}
     </section>
   )
+}
+
+function AiBadge({ ai }) {
+  if (!ai?.enabled) return null
+  return <span className="ai-badge">{ai.provider} · {ai.model}</span>
 }
 
 function groupByCategory(issues) {

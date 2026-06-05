@@ -311,6 +311,17 @@ button {
   font-size: 12px;
 }
 
+.document-tab em {
+  width: fit-content;
+  border: 1px solid rgba(7, 95, 145, 0.2);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--blue);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) 430px 470px;
@@ -476,9 +487,37 @@ button {
   margin: 0;
 }
 
+.ai-badge {
+  width: fit-content;
+  border: 1px solid rgba(7, 95, 145, 0.2);
+  background: #eef8fb;
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ai-summary {
+  margin: 0;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 14px;
+  padding: 12px;
+  color: var(--ink);
+  line-height: 1.7;
+}
+
 .rewrite-box ol {
   margin: 0;
   padding-left: 22px;
+  line-height: 1.7;
+}
+
+.data-needed {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
   line-height: 1.7;
 }
 
@@ -540,6 +579,12 @@ button {
   line-height: 1.7;
   max-height: 280px;
   overflow: auto;
+}
+
+.benefit-result {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .error-banner {
